@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult } from '@hello-pangea/dnd'
 import {
-  Plus, List, Kanban, Clock, Search,
+  Plus, List, Kanban, Clock, Search, X,
   LayoutGrid, RefreshCw, CheckSquare, FolderKanban,
   ClipboardList, Palmtree,
 } from 'lucide-react'
@@ -39,6 +39,7 @@ export function BoardPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [createColumnId, setCreateColumnId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [searchExpanded, setSearchExpanded] = useState(false)
 
   const { data: board, isLoading: boardLoading } = useBoard(boardId)
   const { data: columns = [], isLoading: colsLoading } = useColumns(boardId)
@@ -68,6 +69,12 @@ export function BoardPage() {
     createColumn.mutate({ board_id: boardId, name, color: '#64748b', position: columns.length })
   }
 
+  const handleOpenCreate = () => {
+    if (!hasColumns) return
+    setCreateColumnId(columns[0].id)
+    setShowCreate(true)
+  }
+
   const accentColor = board?.type ? boardColorMap[board.type] : (board?.color || '#0ea5e9')
   const BoardIcon = board?.type ? boardIconMap[board.type] : CheckSquare
   const addButtonLabel: Record<string, string> = {
@@ -79,35 +86,69 @@ export function BoardPage() {
     <div className="flex flex-col h-full" style={{ background: '#0f172a' }}>
       {/* Header */}
       <div
-        className="px-8 py-4 flex-shrink-0"
+        className="px-4 md:px-8 py-3 md:py-4 flex-shrink-0"
         style={{ background: '#0f172a', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2">
+          {/* Board title */}
+          <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
             {boardLoading ? (
-              <div className="w-9 h-9 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.05)' }} />
+              <div className="w-9 h-9 rounded-xl animate-pulse flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }} />
             ) : (
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center"
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: accentColor + '18' }}
               >
                 {BoardIcon && <BoardIcon style={{ color: accentColor, width: 18, height: 18 }} />}
               </div>
             )}
-            <div>
-              <h1 className="text-[17px] font-bold tracking-tight leading-none text-white">
+            <div className="min-w-0">
+              <h1 className="text-[15px] md:text-[17px] font-bold tracking-tight leading-none text-white truncate">
                 {boardLoading
                   ? <div className="h-4 w-28 rounded animate-pulse" style={{ background: 'rgba(255,255,255,0.07)' }} />
                   : board?.name}
               </h1>
               {board?.description && (
-                <p className="text-[11px] mt-0.5 font-medium" style={{ color: 'rgba(255,255,255,0.35)' }}>{board.description}</p>
+                <p className="text-[11px] mt-0.5 font-medium hidden sm:block" style={{ color: 'rgba(255,255,255,0.35)' }}>{board.description}</p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="relative">
+          {/* Controls */}
+          <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+            {/* Mobile search toggle */}
+            {!searchExpanded ? (
+              <button
+                className="md:hidden w-11 h-11 flex items-center justify-center rounded-xl transition-all"
+                style={{ color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.05)' }}
+                onClick={() => setSearchExpanded(true)}
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            ) : (
+              <div className="md:hidden relative flex items-center">
+                <Search className="absolute left-2.5 w-3.5 h-3.5 pointer-events-none" style={{ color: 'rgba(255,255,255,0.25)' }} />
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search..."
+                  className="pl-8 pr-8 py-2 text-[13px] rounded-xl outline-none text-white placeholder-white/25 w-40"
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(14,165,233,0.45)' }}
+                  onBlur={() => { if (!search) setSearchExpanded(false) }}
+                />
+                <button
+                  className="absolute right-2"
+                  style={{ color: 'rgba(255,255,255,0.35)' }}
+                  onMouseDown={() => { setSearch(''); setSearchExpanded(false) }}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Desktop search */}
+            <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.25)' }} />
               <input
                 value={search}
@@ -123,6 +164,7 @@ export function BoardPage() {
               />
             </div>
 
+            {/* View toggle */}
             <div
               className="flex items-center rounded-xl p-0.5"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}
@@ -131,7 +173,7 @@ export function BoardPage() {
                 <button
                   key={v}
                   onClick={() => setView(v)}
-                  className="p-2 rounded-lg transition-all"
+                  className="w-9 h-9 md:w-auto md:h-auto md:p-2 flex items-center justify-center rounded-lg transition-all"
                   style={view === v
                     ? { background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.9)' }
                     : { color: 'rgba(255,255,255,0.3)' }}
@@ -141,16 +183,13 @@ export function BoardPage() {
               ))}
             </div>
 
+            {/* Add button — desktop only */}
             <motion.button
               whileHover={{ scale: hasColumns ? 1.02 : 1 }}
               whileTap={{ scale: hasColumns ? 0.98 : 1 }}
-              onClick={() => {
-                if (!hasColumns) return
-                setCreateColumnId(columns[0].id)
-                setShowCreate(true)
-              }}
+              onClick={handleOpenCreate}
               disabled={!hasColumns || isLoading}
-              className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-semibold text-white rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="hidden md:flex items-center gap-1.5 px-4 py-2 text-[13px] font-semibold text-white rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: hasColumns ? `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)` : 'rgba(255,255,255,0.08)',
                 boxShadow: hasColumns ? `0 4px 14px ${accentColor}40` : 'none',
@@ -167,15 +206,15 @@ export function BoardPage() {
           <motion.div
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-5 mt-3 pt-3"
+            className="flex items-center gap-4 md:gap-5 mt-3 pt-3 overflow-x-auto [scrollbar-width:none] [-webkit-overflow-scrolling:touch] flex-nowrap"
             style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
           >
             {columns.map((col) => {
               const count = tasks.filter((t) => t.column_id === col.id).length
               return (
-                <div key={col.id} className="flex items-center gap-1.5">
+                <div key={col.id} className="flex items-center gap-1.5 flex-shrink-0">
                   <div className="w-2 h-2 rounded-full" style={{ background: col.color, boxShadow: `0 0 6px ${col.color}80` }} />
-                  <span className="text-[12px] font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>{col.name}</span>
+                  <span className="text-[12px] font-medium whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.45)' }}>{col.name}</span>
                   <span
                     className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                     style={{ background: col.color + '20', color: col.color }}
@@ -185,7 +224,7 @@ export function BoardPage() {
                 </div>
               )
             })}
-            <span className="ml-auto text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            <span className="ml-auto text-[11px] font-medium flex-shrink-0" style={{ color: 'rgba(255,255,255,0.25)' }}>
               {tasks.length} total
             </span>
           </motion.div>
@@ -197,7 +236,7 @@ export function BoardPage() {
         {isLoading ? (
           <BoardLoadingSkeleton />
         ) : !hasColumns ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-full px-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -215,7 +254,7 @@ export function BoardPage() {
               </p>
               <button
                 onClick={() => window.location.reload()}
-                className="px-5 py-2.5 text-[13px] font-semibold text-white rounded-xl transition-colors"
+                className="px-5 py-2.5 text-[13px] font-semibold text-white rounded-xl transition-colors min-h-[44px]"
                 style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
               >
                 Refresh page
@@ -246,6 +285,24 @@ export function BoardPage() {
         )}
       </div>
 
+      {/* Mobile FAB */}
+      {hasColumns && !isLoading && (
+        <motion.button
+          className="fixed bottom-6 right-4 md:hidden z-20 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-2xl"
+          style={{
+            background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
+            boxShadow: `0 8px 24px ${accentColor}60`,
+          }}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.94 }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          onClick={handleOpenCreate}
+        >
+          <Plus className="w-6 h-6" />
+        </motion.button>
+      )}
+
       {selectedTask && (
         <TaskModal task={selectedTask} onClose={() => setSelectedTask(null)} />
       )}
@@ -271,7 +328,7 @@ function BoardLoadingSkeleton() {
   const ghost = 'rgba(255,255,255,0.05)'
   const ghostDim = 'rgba(255,255,255,0.03)'
   return (
-    <div className="flex gap-4 px-8 py-6 overflow-x-auto">
+    <div className="flex gap-4 px-4 md:px-8 py-6 overflow-x-auto">
       {[3, 4, 2, 1].map((count, i) => (
         <div key={i} className="w-[280px] flex-shrink-0">
           <div className="h-9 rounded-xl mb-3 animate-pulse" style={{ background: ghost }} />
@@ -313,10 +370,10 @@ function KanbanView({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="h-full overflow-x-auto"
+      className="h-full overflow-x-auto [-webkit-overflow-scrolling:touch]"
     >
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-5 h-full px-8 py-6 min-w-max">
+        <div className="flex gap-4 md:gap-5 h-full px-4 md:px-8 py-5 md:py-6 min-w-max">
           {columns.map((col) => {
             const colTasks = getColumnTasks(col.id)
             return (
@@ -373,7 +430,7 @@ function KanbanView({
 
                       <button
                         onClick={() => onAddTask(col.id)}
-                        className="w-full mt-1.5 py-2 flex items-center justify-center gap-1.5 text-[12px] font-medium rounded-xl transition-all"
+                        className="w-full mt-1.5 py-2.5 flex items-center justify-center gap-1.5 text-[12px] font-medium rounded-xl transition-all min-h-[44px]"
                         style={{ color: 'rgba(255,255,255,0.2)' }}
                         onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.5)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)' }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.2)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
@@ -391,7 +448,7 @@ function KanbanView({
           <div className="flex-shrink-0 w-[280px]">
             <button
               onClick={onAddColumn}
-              className="w-full h-12 flex items-center justify-center gap-2 text-[13px] font-medium rounded-2xl transition-all"
+              className="w-full h-12 flex items-center justify-center gap-2 text-[13px] font-medium rounded-2xl transition-all min-h-[44px]"
               style={{
                 color: 'rgba(255,255,255,0.2)',
                 border: '2px dashed rgba(255,255,255,0.08)',
@@ -498,7 +555,7 @@ function ListView({ columns, tasks, onTaskClick }: { columns: Column[]; tasks: T
   const colMap = Object.fromEntries(columns.map((c) => [c.id, c]))
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-8 py-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-4 md:px-8 py-6 overflow-x-auto [-webkit-overflow-scrolling:touch]">
       {tasks.length === 0 ? (
         <div className="rounded-2xl py-14 text-center"
           style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -507,7 +564,7 @@ function ListView({ columns, tasks, onTaskClick }: { columns: Column[]; tasks: T
           <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.18)' }}>Create your first task using the Add Task button.</p>
         </div>
       ) : (
-        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="rounded-2xl overflow-hidden min-w-[600px]" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
           <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] px-5 py-3 text-[10px] font-bold uppercase tracking-widest"
             style={{ background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.25)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <span>Task</span><span>Status</span><span>Priority</span><span>Assignee</span><span>Due Date</span>
@@ -523,7 +580,7 @@ function ListView({ columns, tasks, onTaskClick }: { columns: Column[]; tasks: T
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.025 }}
                 onClick={() => onTaskClick(task)}
-                className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] px-5 py-3.5 cursor-pointer transition-all items-center group"
+                className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] px-5 py-3.5 cursor-pointer transition-all items-center group min-h-[44px]"
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}

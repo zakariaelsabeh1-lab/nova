@@ -151,9 +151,9 @@ export function CreateTaskModal({ boardId, boardType, columnId, columns, onClose
         exit={{ scale: 0.96, opacity: 0 }}
         transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#f1f5f9]">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#f1f5f9]">
           <h2 className="text-[15px] font-semibold text-[#0f172a]">{modalTitle}</h2>
-          <button onClick={onClose} className="text-[#94a3b8] hover:text-[#64748b] hover:bg-[#f1f5f9] p-1.5 rounded-lg transition-all">
+          <button onClick={onClose} className="w-11 h-11 flex items-center justify-center text-[#94a3b8] hover:text-[#64748b] hover:bg-[#f1f5f9] rounded-xl transition-all">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -176,7 +176,7 @@ export function CreateTaskModal({ boardId, boardType, columnId, columns, onClose
                 <option>Other</option>
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Date From</label>
                 <input type="date" value={vDateFrom} onChange={(e) => setVDateFrom(e.target.value)} required className={inputCls} />
@@ -207,7 +207,7 @@ export function CreateTaskModal({ boardId, boardType, columnId, columns, onClose
               <input type="text" value={aStaff} onChange={(e) => setAStaff(e.target.value)}
                 placeholder="Full name" required autoFocus className={inputCls} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Start Date</label>
                 <input type="date" value={aStartDate} onChange={(e) => setAStartDate(e.target.value)} className={inputCls} />
@@ -248,7 +248,7 @@ export function CreateTaskModal({ boardId, boardType, columnId, columns, onClose
                 placeholder="Description (optional)" rows={3}
                 className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-4 py-3 text-[13px] text-[#0f172a] placeholder-[#94a3b8] outline-none focus:border-[#0ea5e9]/50 transition-colors resize-none" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Phase</label>
                 <select value={selectedColumnId} onChange={(e) => setSelectedColumnId(e.target.value)} className={inputCls}>
@@ -283,7 +283,7 @@ export function CreateTaskModal({ boardId, boardType, columnId, columns, onClose
                 placeholder="Description (optional)" rows={3}
                 className="w-full bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-4 py-3 text-[13px] text-[#0f172a] placeholder-[#94a3b8] outline-none focus:border-[#0ea5e9]/50 transition-colors resize-none" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Column</label>
                 <select value={selectedColumnId} onChange={(e) => setSelectedColumnId(e.target.value)} className={inputCls}>
@@ -313,11 +313,11 @@ export function CreateTaskModal({ boardId, boardType, columnId, columns, onClose
 
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 text-[13px] text-[#64748b] bg-[#f1f5f9] rounded-xl hover:bg-[#e2e8f0] transition-colors">
+              className="flex-1 py-2.5 text-[13px] text-[#64748b] bg-[#f1f5f9] rounded-xl hover:bg-[#e2e8f0] transition-colors min-h-[44px]">
               Cancel
             </button>
             <button type="submit" disabled={saving || !isValid()}
-              className="flex-1 py-2.5 text-[13px] font-medium text-white bg-[#0ea5e9] rounded-xl hover:bg-[#0284c7] transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+              className="flex-1 py-2.5 text-[13px] font-medium text-white bg-[#0ea5e9] rounded-xl hover:bg-[#0284c7] transition-colors disabled:opacity-60 flex items-center justify-center gap-2 min-h-[44px]">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : submitLabel}
             </button>
           </div>

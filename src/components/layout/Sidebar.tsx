@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -30,10 +31,24 @@ const boardColorMap: Record<string, string> = {
   vacation: '#22c55e',
 }
 
-export function Sidebar() {
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const handler = () => setIsMobile(mq.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return isMobile
+}
+
+export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { user } = useAuthStore()
   const { data: boards = [], isLoading: boardsLoading } = useBoards()
   useEnsureDefaultBoards(user?.id)
+  const isMobile = useIsMobile()
 
   const boardLinks = boards.map((board) => ({
     to: `/board/${board.id}`,
@@ -42,12 +57,20 @@ export function Sidebar() {
     color: boardColorMap[board.type] || board.color || '#0ea5e9',
   }))
 
+  const handleNavClick = () => {
+    if (isMobile) onClose()
+  }
+
   return (
     <motion.aside
-      className="w-[240px] flex-shrink-0 flex flex-col h-full bg-[#080e1a] relative"
+      className="w-[240px] flex-shrink-0 flex flex-col bg-[#080e1a] relative fixed md:relative h-full z-40 md:z-auto shadow-[4px_0_32px_rgba(0,0,0,0.4)] md:shadow-none"
       initial={{ x: -240, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      animate={
+        isMobile
+          ? { x: isOpen ? 0 : -240, opacity: 1 }
+          : { x: 0, opacity: 1 }
+      }
+      transition={{ duration: isMobile ? 0.28 : 0.4, ease: [0.22, 1, 0.36, 1] }}
     >
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 pointer-events-none">
@@ -74,7 +97,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="relative flex-1 px-3 py-4 overflow-y-auto">
-        <SidebarLink to="/" label="Dashboard" icon={LayoutDashboard} end />
+        <SidebarLink to="/" label="Dashboard" icon={LayoutDashboard} end onClose={handleNavClick} />
 
         <div className="mt-5 mb-1.5 px-3">
           <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.15em]">Boards</span>
@@ -96,9 +119,10 @@ export function Sidebar() {
               >
                 <NavLink
                   to={link.to}
+                  onClick={handleNavClick}
                   className={({ isActive }) =>
                     cn(
-                      'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 group overflow-hidden',
+                      'relative flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-[13px] font-medium transition-all duration-150 group overflow-hidden',
                       isActive
                         ? 'text-white'
                         : 'text-white/40 hover:text-white/75 hover:bg-white/[0.04]'
@@ -150,14 +174,14 @@ export function Sidebar() {
         </div>
 
         <div className="space-y-0.5">
-          <SidebarLink to="/team" label="Team" icon={Users} />
-          <SidebarLink to="/settings" label="Settings" icon={Settings} />
+          <SidebarLink to="/team" label="Team" icon={Users} onClose={handleNavClick} />
+          <SidebarLink to="/settings" label="Settings" icon={Settings} onClose={handleNavClick} />
         </div>
       </nav>
 
       {/* Notifications */}
       <div className="relative px-3 pb-2">
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/30 hover:text-white/70 hover:bg-white/[0.04] transition-all group">
+        <button className="w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-white/30 hover:text-white/70 hover:bg-white/[0.04] transition-all group">
           <div className="relative">
             <Bell className="w-4 h-4" />
             <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#ef4444] rounded-full border border-[#080e1a] flex items-center justify-center text-[8px] font-black text-white">3</span>
@@ -166,7 +190,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* User — no logout */}
+      {/* User */}
       <div className="relative px-3 pb-4 pt-2 border-t border-white/[0.05]">
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl">
           <div className="relative w-7 h-7 flex-shrink-0">
@@ -192,19 +216,22 @@ function SidebarLink({
   label,
   icon: Icon,
   end = false,
+  onClose,
 }: {
   to: string
   label: string
   icon: ElementType
   end?: boolean
+  onClose?: () => void
 }) {
   return (
     <NavLink
       to={to}
       end={end}
+      onClick={onClose}
       className={({ isActive }) =>
         cn(
-          'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 group',
+          'relative flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-[13px] font-medium transition-all duration-150 group',
           isActive
             ? 'text-white bg-white/[0.07]'
             : 'text-white/40 hover:text-white/75 hover:bg-white/[0.04]'

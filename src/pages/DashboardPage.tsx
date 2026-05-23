@@ -99,13 +99,13 @@ export function DashboardPage() {
       initial="initial"
       animate="animate"
     >
-      {/* ── Landing banner ───────────────────────────────── */}
+      {/* Landing banner */}
       <motion.div
         variants={fadeUp}
-        className="px-8 py-5 border-b border-[#e2e8f0] bg-white flex items-center gap-4"
+        className="px-4 md:px-8 py-4 md:py-5 border-b border-[#e2e8f0] bg-white flex items-center gap-4"
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <h1 className="text-[22px] font-black text-[#0f172a] tracking-tight leading-none">Welcome to Nova</h1>
+          <h1 className="text-[18px] md:text-[22px] font-black text-[#0f172a] tracking-tight leading-none">Welcome to Nova</h1>
           <span
             className="text-[11px] font-black px-2.5 py-1 rounded-full tracking-widest uppercase flex-shrink-0"
             style={{ background: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: '1px solid rgba(14,165,233,0.25)' }}
@@ -118,9 +118,9 @@ export function DashboardPage() {
         </p>
       </motion.div>
 
-      {/* ── Hero gradient section ─────────────────────────── */}
+      {/* Hero gradient section */}
       <div
-        className="relative overflow-hidden px-8 pt-10 pb-14"
+        className="relative overflow-hidden px-4 md:px-8 pt-6 md:pt-10 pb-10 md:pb-14"
         style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #0f172a 100%)' }}
       >
         {/* Animated blobs */}
@@ -146,21 +146,21 @@ export function DashboardPage() {
         />
 
         <div className="relative max-w-[1200px] mx-auto">
-          <motion.div variants={fadeUp} className="mb-9">
+          <motion.div variants={fadeUp} className="mb-6 md:mb-9">
             <div className="flex items-center gap-2 mb-3">
               <Zap className="w-3.5 h-3.5 text-[#0ea5e9]" />
               <span className="text-[11px] font-semibold text-white/40 uppercase tracking-[0.12em]">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </span>
             </div>
-            <h1 className="text-[32px] font-bold text-white tracking-tight leading-none mb-2">
+            <h1 className="text-[24px] md:text-[32px] font-bold text-white tracking-tight leading-none mb-2">
               {greeting}, {firstName} 👋
             </h1>
-            <p className="text-white/40 text-[15px]">Here's your workspace at a glance.</p>
+            <p className="text-white/40 text-[14px] md:text-[15px]">Here's your workspace at a glance.</p>
           </motion.div>
 
-          {/* Stat cards */}
-          <div className="grid grid-cols-4 gap-4">
+          {/* Stat cards — 2 cols on mobile, 4 on desktop */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {statCards.map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -168,25 +168,25 @@ export function DashboardPage() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ delay: 0.1 + i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                 whileHover={{ y: -4, scale: 1.02 }}
-                className="relative rounded-2xl p-5 overflow-hidden cursor-default"
+                className="relative rounded-2xl p-4 md:p-5 overflow-hidden cursor-default"
                 style={{ background: stat.grad, boxShadow: `0 8px 32px -4px ${stat.glow}` }}
               >
                 <div className="absolute inset-0 opacity-10"
                   style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 60%)' }}
                 />
                 <div className="relative">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-                      <stat.icon className="w-5 h-5 text-white" />
+                  <div className="flex items-start justify-between mb-3 md:mb-4">
+                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                      <stat.icon className="w-4 h-4 md:w-5 md:h-5 text-white" />
                     </div>
-                    <span className="text-[10px] font-bold text-white/70 bg-white/15 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    <span className="text-[9px] md:text-[10px] font-bold text-white/70 bg-white/15 px-1.5 md:px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:block">
                       {stat.badge}
                     </span>
                   </div>
-                  <div className="text-[34px] font-black text-white leading-none mb-0.5 tracking-tight">
+                  <div className="text-[28px] md:text-[34px] font-black text-white leading-none mb-0.5 tracking-tight">
                     <AnimatedNumber value={stat.value} />
                   </div>
-                  <div className="text-[13px] font-medium text-white/70">{stat.label}</div>
+                  <div className="text-[11px] md:text-[13px] font-medium text-white/70">{stat.label}</div>
                 </div>
               </motion.div>
             ))}
@@ -194,18 +194,19 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Content section ──────────────────────────────── */}
-      <div className="max-w-[1200px] mx-auto px-8 py-8">
-        <div className="grid grid-cols-[1fr_300px] gap-6">
+      {/* Content section */}
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-6 md:py-8">
+        {/* On mobile: single column stack. On desktop: boards + sidebar */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6">
           {/* Boards */}
           <div>
-            <motion.div variants={fadeUp} className="flex items-center justify-between mb-5">
+            <motion.div variants={fadeUp} className="flex items-center justify-between mb-4 md:mb-5">
               <h2 className="text-[16px] font-bold text-[#0f172a]">Your Boards</h2>
               <span className="text-[12px] text-[#94a3b8] font-medium">{boards?.length ?? 0} boards</span>
             </motion.div>
 
             {boardsLoading ? (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[0, 1, 2, 3].map((i) => (
                   <div key={i} className="bg-white border border-[#e2e8f0] rounded-2xl p-5 animate-pulse">
                     <div className="flex items-start justify-between mb-5">
@@ -219,7 +220,7 @@ export function DashboardPage() {
                 ))}
               </div>
             ) : boards && boards.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {boards.map((board, i) => {
                   const meta = boardMeta[board.type] || boardMeta.tasks
                   return (
@@ -273,7 +274,7 @@ export function DashboardPage() {
             )}
           </div>
 
-          {/* Right column */}
+          {/* Right column — activity + date card */}
           <motion.div variants={fadeUp} className="space-y-4">
             {/* Activity */}
             <div>
