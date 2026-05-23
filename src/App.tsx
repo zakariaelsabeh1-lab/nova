@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -38,32 +38,27 @@ function AppLoader() {
 }
 
 export default function App() {
-  const { loading, setLoading, fetchProfile } = useAuthStore()
+  const { fetchProfile } = useAuthStore()
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setLoading(false))
+        await fetchProfile(session.user.id)
       } else {
-        // Auto-login with demo account — no login page shown
-        supabase.auth.signInWithPassword({ email: 'demo@nova.app', password: 'demo1234' })
-          .then(({ data }) => { if (data.user) return fetchProfile(data.user.id) })
-          .finally(() => setLoading(false))
+        const { data } = await supabase.auth.signInWithPassword({
+          email: 'demo@nova.app',
+          password: 'demo1234',
+        })
+        if (data.user) await fetchProfile(data.user.id)
       }
-    })
+      setReady(true)
+    }
+    init()
+  }, [fetchProfile])
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (_event === 'TOKEN_REFRESHED' && session?.user) {
-          fetchProfile(session.user.id)
-        }
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [fetchProfile, setLoading])
-
-  if (loading) return <AppLoader />
+  if (!ready) return <AppLoader />
 
   return (
     <Routes>
