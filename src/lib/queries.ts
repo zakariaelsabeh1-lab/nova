@@ -1,6 +1,7 @@
+import { useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from './supabase'
-import type { Board, Column, Task, Profile, Comment, Notification } from '@/types'
+import type { Board, BoardType, Column, Task, Profile, Comment, Notification } from '@/types'
 
 // ── Boards ──────────────────────────────────────────────
 export function useBoards() {
@@ -229,6 +230,85 @@ export function useNotifications(userId: string) {
     },
     enabled: !!userId,
   })
+}
+
+// ── Create board ──────────────────────────────────────────────
+export function useCreateBoard() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (board: Partial<Board>) => {
+      const { data, error } = await supabase.from('boards').insert(board).select().single()
+      if (error) throw error
+      return data as Board
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['boards'] }),
+  })
+}
+
+// ── Default board definitions ──────────────────────────────────────────────
+const DEFAULT_BOARDS: { name: string; type: BoardType; color: string }[] = [
+  { name: 'Tasks', type: 'tasks', color: '#0ea5e9' },
+  { name: 'Projects', type: 'projects', color: '#8b5cf6' },
+  { name: 'Assignments', type: 'assignments', color: '#f59e0b' },
+  { name: 'Vacation', type: 'vacation', color: '#22c55e' },
+]
+
+const DEFAULT_COLUMNS: Record<BoardType, { name: string; color: string; position: number }[]> = {
+  tasks: [
+    { name: 'Not Started', color: '#64748b', position: 0 },
+    { name: 'In Progress', color: '#0ea5e9', position: 1 },
+    { name: 'Review', color: '#8b5cf6', position: 2 },
+    { name: 'Done', color: '#22c55e', position: 3 },
+  ],
+  projects: [
+    { name: 'Planning', color: '#64748b', position: 0 },
+    { name: 'Active', color: '#0ea5e9', position: 1 },
+    { name: 'Review', color: '#8b5cf6', position: 2 },
+    { name: 'Complete', color: '#22c55e', position: 3 },
+  ],
+  assignments: [
+    { name: 'Unassigned', color: '#64748b', position: 0 },
+    { name: 'Assigned', color: '#0ea5e9', position: 1 },
+    { name: 'In Progress', color: '#f59e0b', position: 2 },
+    { name: 'Complete', color: '#22c55e', position: 3 },
+  ],
+  vacation: [
+    { name: 'Pending', color: '#64748b', position: 0 },
+    { name: 'Approved', color: '#22c55e', position: 1 },
+    { name: 'Declined', color: '#ef4444', position: 2 },
+  ],
+}
+
+export function useEnsureDefaultBoards(userId: string | undefined) {
+  const qc = useQueryClient()
+  const { data: boards, isSuccess } = useBoards()
+  const seeded = useRef(false)
+
+  useEffect(() => {
+    if (!userId || !isSuccess || seeded.current) return
+    if (boards && boards.length > 0) { seeded.current = true; return }
+
+    seeded.current = true
+
+    const seed = async () => {
+      for (const def of DEFAULT_BOARDS) {
+        const { data: board } = await supabase
+          .from('boards')
+          .insert({ name: def.name, type: def.type, color: def.color, created_by: userId })
+          .select()
+          .single()
+
+        if (board) {
+          await supabase.from('columns').insert(
+            DEFAULT_COLUMNS[def.type].map((c) => ({ ...c, board_id: board.id }))
+          )
+        }
+      }
+      qc.invalidateQueries({ queryKey: ['boards'] })
+    }
+
+    seed()
+  }, [userId, isSuccess, boards, qc])
 }
 
 // ── Board stats for dashboard ──────────────────────────────────────────────

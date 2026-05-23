@@ -13,7 +13,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
-import { useBoards } from '@/lib/queries'
+import { useBoards, useEnsureDefaultBoards } from '@/lib/queries'
 import { getInitials, cn } from '@/lib/utils'
 import type { ElementType } from 'react'
 
@@ -35,6 +35,7 @@ export function Sidebar() {
   const { user, signOut } = useAuthStore()
   const navigate = useNavigate()
   const { data: boards = [], isLoading: boardsLoading } = useBoards()
+  useEnsureDefaultBoards(user?.id)
 
   const handleSignOut = async () => {
     await signOut()
