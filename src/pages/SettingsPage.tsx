@@ -4,7 +4,7 @@ import { User, Bell, Lock, Camera, Check, Loader2, Shield, Sparkles } from 'luci
 import { useAuthStore } from '@/store/authStore'
 import { useUpdateProfile } from '@/lib/queries'
 import { supabase } from '@/lib/supabase'
-import { getInitials } from '@/lib/utils'
+import { getInitials, isDemoUser } from '@/lib/utils'
 
 type Tab = 'profile' | 'notifications' | 'security'
 
@@ -16,6 +16,7 @@ const tabs = [
 
 export function SettingsPage() {
   const { user, fetchProfile } = useAuthStore()
+  const isDemo = isDemoUser(user)
   const [tab, setTab] = useState<Tab>('profile')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -86,6 +87,18 @@ export function SettingsPage() {
         <h1 className="text-[26px] font-bold text-[#0f172a] tracking-tight mb-1">Settings</h1>
         <p className="text-[14px] text-[#64748b]">Manage your account and workspace preferences.</p>
       </div>
+
+      {isDemo && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-6 text-[13px] font-semibold"
+          style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b' }}
+        >
+          <Sparkles className="w-4 h-4 flex-shrink-0" />
+          Demo account — settings are read-only. Create a real account to manage your workspace.
+        </motion.div>
+      )}
 
       {/* Tab switcher */}
       <div className="flex gap-1 bg-[#f1f5f9] p-1 rounded-2xl w-fit mb-8 shadow-inner">
@@ -299,7 +312,7 @@ export function SettingsPage() {
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             onClick={handleSave}
-            disabled={saving || saved}
+            disabled={saving || saved || isDemo}
             className="flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold text-white bg-[#0f172a] rounded-xl hover:bg-[#1e293b] transition-colors disabled:opacity-70 shadow-sm"
           >
             {saving ? (

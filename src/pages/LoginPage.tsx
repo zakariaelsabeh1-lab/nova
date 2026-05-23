@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
-import { Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, Loader2, Sparkles } from 'lucide-react'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -12,6 +12,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
   const [error, setError] = useState('')
 
   if (!loading && user) return <Navigate to="/" replace />
@@ -27,6 +28,31 @@ export function LoginPage() {
     if (err) {
       setError(err.message)
       setSubmitting(false)
+      setLoading(false)
+      return
+    }
+
+    if (data.user) {
+      await fetchProfile(data.user.id)
+    }
+
+    setLoading(false)
+    navigate('/', { replace: true })
+  }
+
+  const handleDemo = async () => {
+    setError('')
+    setDemoLoading(true)
+    setLoading(true)
+
+    const { data, error: err } = await supabase.auth.signInWithPassword({
+      email: 'demo@nova.app',
+      password: 'demo1234',
+    })
+
+    if (err) {
+      setError('Demo account unavailable. Ask your admin to run create_demo_user.sql.')
+      setDemoLoading(false)
       setLoading(false)
       return
     }
@@ -261,6 +287,47 @@ export function LoginPage() {
                 )}
               </button>
             </form>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 mt-5">
+              <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+              <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.2)' }}>or</span>
+              <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+            </div>
+
+            {/* Try Demo button */}
+            <button
+              type="button"
+              onClick={handleDemo}
+              disabled={demoLoading || submitting}
+              className="w-full mt-4 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[14px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.7)',
+              }}
+              onMouseEnter={(e) => {
+                if (!demoLoading && !submitting) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.09)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.9)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                e.currentTarget.style.color = 'rgba(255,255,255,0.7)'
+              }}
+            >
+              {demoLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" style={{ color: '#0ea5e9' }} />
+                  Try Demo
+                </>
+              )}
+            </button>
           </motion.div>
 
           <motion.p

@@ -4,7 +4,7 @@ import { X, Clock, User, Tag, MessageSquare, Send, Loader2, Trash2, Edit2, Check
 import type { Task, Profile } from '@/types'
 import { useComments, useCreateComment, useProfiles, useUpdateTask, useDeleteTask } from '@/lib/queries'
 import { useAuthStore } from '@/store/authStore'
-import { formatDateTime, getInitials } from '@/lib/utils'
+import { formatDateTime, getInitials, isDemoUser } from '@/lib/utils'
 
 interface TaskModalProps {
   task: Task
@@ -127,6 +127,7 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
     setEditingDesc(false)
   }
 
+  const isDemo = isDemoUser(user)
   const p = priorityConfig[task.priority] || priorityConfig.medium
   const s = statusConfig[task.status] || statusConfig.todo
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
@@ -436,15 +437,17 @@ export function TaskModal({ task, onClose }: TaskModalProps) {
                   <span className="text-[12px] text-[#64748b]">{task.creator?.full_name || 'Unknown'}</span>
                 </MetaItem>
 
-                <div className="pt-4 border-t border-[#f1f5f9]">
-                  <button
-                    onClick={handleDeleteTask}
-                    className="w-full flex items-center justify-center gap-1.5 py-2 text-[12px] text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Delete task
-                  </button>
-                </div>
+                {!isDemo && (
+                  <div className="pt-4 border-t border-[#f1f5f9]">
+                    <button
+                      onClick={handleDeleteTask}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 text-[12px] text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete task
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
