@@ -63,8 +63,8 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 
   return (
     <motion.aside
-      className="w-[240px] flex-shrink-0 flex flex-col bg-[#080e1a] relative fixed md:relative h-full z-40 md:z-auto shadow-[4px_0_32px_rgba(0,0,0,0.4)] md:shadow-none"
-      initial={{ x: -240, opacity: 0 }}
+      className="w-[240px] flex-shrink-0 flex flex-col bg-[#080e1a] fixed md:relative h-full z-40 md:z-auto shadow-[4px_0_32px_rgba(0,0,0,0.4)] md:shadow-none"
+      initial={isMobile ? { x: -240, opacity: 1 } : { x: -240, opacity: 0 }}
       animate={
         isMobile
           ? { x: isOpen ? 0 : -240, opacity: 1 }
