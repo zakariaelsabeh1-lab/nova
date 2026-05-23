@@ -99,6 +99,25 @@ export function DashboardPage() {
       initial="initial"
       animate="animate"
     >
+      {/* ── Landing banner ───────────────────────────────── */}
+      <motion.div
+        variants={fadeUp}
+        className="px-8 py-5 border-b border-[#e2e8f0] bg-white flex items-center gap-4"
+      >
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <h1 className="text-[22px] font-black text-[#0f172a] tracking-tight leading-none">Welcome to Nova</h1>
+          <span
+            className="text-[11px] font-black px-2.5 py-1 rounded-full tracking-widest uppercase flex-shrink-0"
+            style={{ background: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: '1px solid rgba(14,165,233,0.25)' }}
+          >
+            DEMO
+          </span>
+        </div>
+        <p className="text-[13px] text-[#64748b] hidden md:block flex-shrink-0">
+          Manage your team's tasks, projects, assignments and vacation requests — all in one place.
+        </p>
+      </motion.div>
+
       {/* ── Hero gradient section ─────────────────────────── */}
       <div
         className="relative overflow-hidden px-8 pt-10 pb-14"

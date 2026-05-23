@@ -4,18 +4,10 @@ import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { BoardPage } from '@/pages/BoardPage'
 import { TeamPage } from '@/pages/TeamPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuthStore()
-  if (loading) return <AppLoader />
-  if (!user) return <Navigate to="/login" replace />
-  return <>{children}</>
-}
 
 function AppLoader() {
   return (
@@ -46,48 +38,36 @@ function AppLoader() {
 }
 
 export default function App() {
-  const { setUser, setLoading, fetchProfile } = useAuthStore()
+  const { loading, setLoading, fetchProfile } = useAuthStore()
 
   useEffect(() => {
-    // Check for existing session on load
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         fetchProfile(session.user.id).finally(() => setLoading(false))
       } else {
-        setUser(null)
-        setLoading(false)
+        // Auto-login with demo account — no login page shown
+        supabase.auth.signInWithPassword({ email: 'demo@nova.app', password: 'demo1234' })
+          .then(({ data }) => { if (data.user) return fetchProfile(data.user.id) })
+          .finally(() => setLoading(false))
       }
     })
 
-    // Listen for auth changes (token refresh, sign out, etc.)
-    // Do NOT call fetchProfile here on SIGNED_IN — LoginPage handles that
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        if (_event === 'SIGNED_OUT') {
-          setUser(null)
-          setLoading(false)
-        } else if (_event === 'TOKEN_REFRESHED' && session?.user) {
-          // Token refreshed — re-fetch profile silently
+        if (_event === 'TOKEN_REFRESHED' && session?.user) {
           fetchProfile(session.user.id)
         }
-        // SIGNED_IN is handled by LoginPage.handleLogin directly
       }
     )
 
     return () => subscription.unsubscribe()
-  }, [fetchProfile, setUser, setLoading])
+  }, [fetchProfile, setLoading])
+
+  if (loading) return <AppLoader />
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <AppLayout />
-          </ProtectedRoute>
-        }
-      >
+      <Route path="/" element={<AppLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="board/:boardId" element={<BoardPage />} />
         <Route path="team" element={<TeamPage />} />
