@@ -11,8 +11,10 @@ import {
   ArrowRight,
   Circle,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
+import { useBoards, useBoardStats, useProfiles } from '@/lib/queries'
 
 const stagger: Variants = {
   animate: { transition: { staggerChildren: 0.07 } },
@@ -23,59 +25,12 @@ const fadeUp: Variants = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 }
 
-const boards = [
-  {
-    id: 'tasks',
-    name: 'Tasks',
-    icon: CheckSquare,
-    color: '#0ea5e9',
-    bg: 'bg-sky-50',
-    border: 'border-sky-100',
-    count: 24,
-    done: 18,
-    desc: 'Daily operational tasks',
-  },
-  {
-    id: 'projects',
-    name: 'Projects',
-    icon: FolderKanban,
-    color: '#8b5cf6',
-    bg: 'bg-violet-50',
-    border: 'border-violet-100',
-    count: 8,
-    done: 3,
-    desc: 'Active project pipelines',
-  },
-  {
-    id: 'assignments',
-    name: 'Assignments',
-    icon: ClipboardList,
-    color: '#f59e0b',
-    bg: 'bg-amber-50',
-    border: 'border-amber-100',
-    count: 15,
-    done: 10,
-    desc: 'Team assignments & reviews',
-  },
-  {
-    id: 'vacation',
-    name: 'Vacation',
-    icon: Palmtree,
-    color: '#22c55e',
-    bg: 'bg-green-50',
-    border: 'border-green-100',
-    count: 5,
-    done: 2,
-    desc: 'Time-off & leave requests',
-  },
-]
-
-const stats = [
-  { label: 'Open Tasks', value: '14', icon: Circle, color: '#0ea5e9', change: '+2 today' },
-  { label: 'Completed', value: '33', icon: CheckCircle2, color: '#22c55e', change: '+5 this week' },
-  { label: 'Team Members', value: '8', icon: Users, color: '#8b5cf6', change: 'Active' },
-  { label: 'Due This Week', value: '6', icon: Clock, color: '#f59e0b', change: '2 overdue' },
-]
+const boardMeta: Record<string, { icon: React.ElementType; color: string; bg: string; border: string }> = {
+  tasks: { icon: CheckSquare, color: '#0ea5e9', bg: 'bg-sky-50', border: 'border-sky-100' },
+  projects: { icon: FolderKanban, color: '#8b5cf6', bg: 'bg-violet-50', border: 'border-violet-100' },
+  assignments: { icon: ClipboardList, color: '#f59e0b', bg: 'bg-amber-50', border: 'border-amber-100' },
+  vacation: { icon: Palmtree, color: '#22c55e', bg: 'bg-green-50', border: 'border-green-100' },
+}
 
 const recentActivity = [
   { user: 'Alex M.', action: 'completed', task: 'API integration setup', time: '2m ago', color: '#0ea5e9' },
@@ -87,11 +42,20 @@ const recentActivity = [
 export function DashboardPage() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
-  const firstName = user?.full_name?.split(' ')[0] || 'there'
+  const { data: boards, isLoading: boardsLoading } = useBoards()
+  const { data: stats } = useBoardStats()
+  const { data: profiles } = useProfiles()
 
-  const now = new Date()
-  const hour = now.getHours()
+  const firstName = user?.full_name?.split(' ')[0] || 'there'
+  const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+
+  const statCards = [
+    { label: 'Open Tasks', value: String(stats?.open ?? '—'), icon: Circle, color: '#0ea5e9', change: 'Active' },
+    { label: 'Completed', value: String(stats?.done ?? '—'), icon: CheckCircle2, color: '#22c55e', change: 'All time' },
+    { label: 'Team Members', value: String(profiles?.length ?? '—'), icon: Users, color: '#8b5cf6', change: 'Active' },
+    { label: 'Due This Week', value: String(stats?.dueThisWeek ?? '—'), icon: Clock, color: '#f59e0b', change: 'Upcoming' },
+  ]
 
   return (
     <motion.div
@@ -110,20 +74,17 @@ export function DashboardPage() {
         </p>
       </motion.div>
 
-      {/* Stats row */}
+      {/* Stats */}
       <motion.div variants={fadeUp} className="grid grid-cols-4 gap-4 mb-8">
-        {stats.map((stat) => (
+        {statCards.map((stat) => (
           <motion.div
             key={stat.label}
             whileHover={{ y: -2, boxShadow: '0 8px 24px -4px rgba(0,0,0,0.08)' }}
             className="bg-white border border-[#e2e8f0] rounded-2xl p-5 transition-shadow"
           >
             <div className="flex items-start justify-between mb-4">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: stat.color + '15' }}
-              >
-                <stat.icon className="w-4.5 h-4.5" style={{ color: stat.color, width: 18, height: 18 }} />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: stat.color + '15' }}>
+                <stat.icon style={{ color: stat.color, width: 18, height: 18 }} />
               </div>
               <span className="text-[11px] text-[#94a3b8] font-medium">{stat.change}</span>
             </div>
@@ -133,62 +94,57 @@ export function DashboardPage() {
         ))}
       </motion.div>
 
-      {/* Boards grid + Activity */}
+      {/* Boards + Activity */}
       <div className="grid grid-cols-[1fr_320px] gap-6">
-        {/* Boards */}
         <div>
           <motion.div variants={fadeUp} className="flex items-center justify-between mb-4">
             <h2 className="text-[15px] font-semibold text-[#0f172a]">Your Boards</h2>
-            <span className="text-[13px] text-[#0ea5e9] font-medium cursor-pointer hover:text-[#0284c7]">
-              View all
-            </span>
           </motion.div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {boards.map((board, i) => (
-              <motion.div
-                key={board.id}
-                variants={fadeUp}
-                custom={i}
-                whileHover={{ y: -3, boxShadow: '0 12px 32px -6px rgba(0,0,0,0.1)' }}
-                onClick={() => navigate(`/board/${board.id}`)}
-                className="bg-white border border-[#e2e8f0] rounded-2xl p-5 cursor-pointer transition-shadow group"
-              >
-                <div className="flex items-start justify-between mb-5">
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${board.bg} ${board.border} border`}
+          {boardsLoading ? (
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="w-5 h-5 text-[#94a3b8] animate-spin" />
+            </div>
+          ) : boards && boards.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4">
+              {boards.map((board, i) => {
+                const meta = boardMeta[board.type] || boardMeta.tasks
+                return (
+                  <motion.div
+                    key={board.id}
+                    variants={fadeUp}
+                    custom={i}
+                    whileHover={{ y: -3, boxShadow: '0 12px 32px -6px rgba(0,0,0,0.1)' }}
+                    onClick={() => navigate(`/board/${board.id}`)}
+                    className="bg-white border border-[#e2e8f0] rounded-2xl p-5 cursor-pointer transition-shadow group"
                   >
-                    <board.icon style={{ color: board.color, width: 20, height: 20 }} />
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-[#cbd5e1] group-hover:text-[#94a3b8] transition-colors" />
-                </div>
-
-                <h3 className="text-[15px] font-semibold text-[#0f172a] mb-1">{board.name}</h3>
-                <p className="text-[12px] text-[#94a3b8] mb-4">{board.desc}</p>
-
-                {/* Progress bar */}
-                <div>
-                  <div className="flex items-center justify-between text-[11px] mb-1.5">
-                    <span className="text-[#64748b]">
-                      {board.done}/{board.count} tasks
-                    </span>
-                    <span className="font-medium" style={{ color: board.color }}>
-                      {Math.round((board.done / board.count) * 100)}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-[#f1f5f9] rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full rounded-full"
-                      style={{ background: board.color }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(board.done / board.count) * 100}%` }}
-                      transition={{ duration: 0.8, delay: 0.3 + i * 0.1, ease: 'easeOut' }}
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                    <div className="flex items-start justify-between mb-5">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${meta.bg} ${meta.border} border`}>
+                        <meta.icon style={{ color: meta.color, width: 20, height: 20 }} />
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-[#cbd5e1] group-hover:text-[#94a3b8] transition-colors" />
+                    </div>
+                    <h3 className="text-[15px] font-semibold text-[#0f172a] mb-1">{board.name}</h3>
+                    <p className="text-[12px] text-[#94a3b8] mb-4">{board.description || 'No description'}</p>
+                    <div className="h-1.5 bg-[#f1f5f9] rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ background: meta.color }}
+                        initial={{ width: 0 }}
+                        animate={{ width: '40%' }}
+                        transition={{ duration: 0.8, delay: 0.3 + i * 0.1, ease: 'easeOut' }}
+                      />
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="bg-white border-2 border-dashed border-[#e2e8f0] rounded-2xl p-10 text-center">
+              <p className="text-[14px] text-[#94a3b8] mb-3">No boards yet</p>
+              <p className="text-[12px] text-[#cbd5e1]">Run the seed SQL to create default boards</p>
+            </div>
+          )}
         </div>
 
         {/* Activity */}
@@ -227,15 +183,9 @@ export function DashboardPage() {
                 </motion.div>
               ))}
             </div>
-
-            <div className="px-4 py-3 border-t border-[#f1f5f9]">
-              <button className="text-[12px] text-[#0ea5e9] font-medium hover:text-[#0284c7] transition-colors">
-                View all activity →
-              </button>
-            </div>
           </div>
 
-          {/* Mini calendar / date widget */}
+          {/* Date widget */}
           <div className="bg-[#0f172a] rounded-2xl p-5 mt-4">
             <div className="text-white/40 text-[11px] uppercase tracking-widest mb-1">Today</div>
             <div className="text-white text-2xl font-bold">
@@ -244,26 +194,28 @@ export function DashboardPage() {
             <div className="text-white/40 text-[13px]">
               {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </div>
-            <div className="mt-4 pt-4 border-t border-white/10">
-              <div className="text-white/60 text-[12px] mb-2">Upcoming deadlines</div>
-              <div className="space-y-2">
-                {[
-                  { label: 'API review', tag: 'Projects', color: '#8b5cf6' },
-                  { label: 'Sprint planning', tag: 'Tasks', color: '#0ea5e9' },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: item.color }} />
-                    <span className="text-white/70 text-[12px] flex-1">{item.label}</span>
-                    <span
-                      className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                      style={{ background: item.color + '25', color: item.color }}
+            {profiles && (
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <div className="text-white/40 text-[11px] mb-2">Team</div>
+                <div className="flex -space-x-2">
+                  {profiles.slice(0, 5).map((p, i) => (
+                    <div
+                      key={p.id}
+                      className="w-7 h-7 rounded-full border-2 border-[#0f172a] flex items-center justify-center text-white text-[10px] font-semibold"
+                      style={{ background: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#22c55e', '#ef4444'][i % 5], zIndex: 5 - i }}
+                      title={p.full_name}
                     >
-                      {item.tag}
-                    </span>
-                  </div>
-                ))}
+                      {p.full_name?.[0] || '?'}
+                    </div>
+                  ))}
+                  {profiles.length > 5 && (
+                    <div className="w-7 h-7 rounded-full border-2 border-[#0f172a] bg-white/10 flex items-center justify-center text-white text-[10px]">
+                      +{profiles.length - 5}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </motion.div>
       </div>
