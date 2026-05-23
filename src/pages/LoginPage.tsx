@@ -14,14 +14,13 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  // Already authenticated — redirect immediately
   if (!loading && user) return <Navigate to="/" replace />
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setSubmitting(true)
-    setLoading(true) // prevent ProtectedRoute from redirecting during fetch
+    setLoading(true)
 
     const { data, error: err } = await supabase.auth.signInWithPassword({ email, password })
 
@@ -33,7 +32,6 @@ export function LoginPage() {
     }
 
     if (data.user) {
-      // Fetch profile FIRST, then navigate — so ProtectedRoute sees the user
       await fetchProfile(data.user.id)
     }
 
@@ -43,16 +41,11 @@ export function LoginPage() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, #060c18 0%, #0f172a 60%, #1e1b4b 100%)' }}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center gap-4"
-        >
-          <div className="relative w-10 h-10 rounded-xl overflow-hidden">
+      <div className="fixed inset-0 flex items-center justify-center login-bg">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-4">
+          <div className="relative w-12 h-12 rounded-2xl overflow-hidden shadow-2xl shadow-sky-500/30">
             <div className="absolute inset-0 bg-gradient-to-br from-[#0ea5e9] to-[#6366f1]" />
-            <span className="absolute inset-0 flex items-center justify-center text-white font-black text-lg">N</span>
+            <span className="absolute inset-0 flex items-center justify-center text-white font-black text-xl">N</span>
           </div>
           <div className="w-5 h-5 rounded-full border-2 border-[#0ea5e9] border-t-transparent animate-spin" />
         </motion.div>
@@ -61,186 +54,230 @@ export function LoginPage() {
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center overflow-hidden relative"
-      style={{ background: 'linear-gradient(135deg, #060c18 0%, #0f172a 40%, #1e1b4b 70%, #0f172a 100%)' }}
-    >
-      {/* Animated background orbs */}
-      <motion.div
-        className="absolute top-1/4 right-1/4 w-[500px] h-[500px] rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(14,165,233,0.09) 0%, transparent 70%)' }}
-        animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.9, 0.5] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.div
-        className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.09) 0%, transparent 70%)' }}
-        animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.7, 0.3] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-      />
+    <>
+      <style>{`
+        @keyframes gradientShift {
+          0%   { background-position: 0% 50%; }
+          33%  { background-position: 100% 50%; }
+          66%  { background-position: 50% 0%; }
+          100% { background-position: 0% 50%; }
+        }
+        .login-bg {
+          background: linear-gradient(-45deg, #0f172a, #1e1b4b, #0f2942, #0f172a, #1e1b4b, #0c1a2e);
+          background-size: 400% 400%;
+          animation: gradientShift 12s ease infinite;
+        }
+        @keyframes orbDrift1 {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          33%       { transform: translate(40px, -30px) scale(1.08); }
+          66%       { transform: translate(-20px, 25px) scale(0.95); }
+        }
+        @keyframes orbDrift2 {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          33%       { transform: translate(-35px, 25px) scale(1.05); }
+          66%       { transform: translate(20px, -20px) scale(0.92); }
+        }
+        @keyframes orbDrift3 {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          50%       { transform: translate(25px, -35px) scale(1.1); }
+        }
+        .orb-1 { animation: orbDrift1 14s ease-in-out infinite; }
+        .orb-2 { animation: orbDrift2 18s ease-in-out infinite; }
+        .orb-3 { animation: orbDrift3 11s ease-in-out infinite; }
+        @keyframes particleFloat {
+          0%, 100% { transform: translateY(0); opacity: 0.2; }
+          50%       { transform: translateY(-18px); opacity: 0.55; }
+        }
+        @keyframes logoGlow {
+          0%, 100% { box-shadow: 0 0 20px rgba(14,165,233,0.4), 0 0 40px rgba(14,165,233,0.15); }
+          50%       { box-shadow: 0 0 35px rgba(14,165,233,0.65), 0 0 70px rgba(14,165,233,0.25); }
+        }
+        .logo-glow { animation: logoGlow 2.8s ease-in-out infinite; }
+        @keyframes shimmerSlide {
+          from { transform: translateX(-100%); }
+          to   { transform: translateX(300%); }
+        }
+        .btn-shimmer:hover .shimmer-line { animation: shimmerSlide 0.65s ease forwards; }
+      `}</style>
 
-      {/* Grid */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.025]"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
-          backgroundSize: '56px 56px',
-        }}
-      />
+      <div className="fixed inset-0 login-bg flex items-center justify-center overflow-hidden">
+        {/* Orbs */}
+        <div className="orb-1 absolute top-[15%] right-[18%] w-[520px] h-[520px] rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle at 40% 40%, rgba(14,165,233,0.18) 0%, transparent 65%)', filter: 'blur(1px)' }} />
+        <div className="orb-2 absolute bottom-[10%] left-[12%] w-[460px] h-[460px] rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle at 60% 60%, rgba(99,102,241,0.2) 0%, transparent 65%)', filter: 'blur(1px)' }} />
+        <div className="orb-3 absolute top-[55%] left-[55%] w-[340px] h-[340px] rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle at 50% 50%, rgba(14,165,233,0.12) 0%, transparent 65%)', filter: 'blur(2px)' }} />
 
-      {/* Floating particles */}
-      {[...Array(8)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full pointer-events-none"
+        {/* Grid overlay */}
+        <div className="absolute inset-0 pointer-events-none"
           style={{
-            width: [3, 5, 4, 6, 3, 4, 5, 3][i],
-            height: [3, 5, 4, 6, 3, 4, 5, 3][i],
-            background: ['#0ea5e9', '#6366f1', '#22c55e', '#0ea5e9', '#6366f1', '#f59e0b', '#0ea5e9', '#6366f1'][i],
-            opacity: 0.35,
-            left: `${[12, 78, 38, 88, 22, 62, 48, 90][i]}%`,
-            top: `${[18, 12, 72, 42, 88, 28, 55, 65][i]}%`,
-          }}
-          animate={{ y: [-10, 10, -10], opacity: [0.15, 0.45, 0.15] }}
-          transition={{ duration: 4 + i * 0.7, repeat: Infinity, ease: 'easeInOut', delay: i * 0.6 }}
-        />
-      ))}
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)',
+            backgroundSize: '64px 64px',
+          }} />
 
-      <motion.div
-        initial={{ opacity: 0, y: 28, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 w-full max-w-[400px] mx-4"
-      >
-        {/* Logo */}
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="flex justify-center mb-9"
-        >
-          <div className="flex items-center gap-3">
-            <div className="relative w-11 h-11 rounded-2xl overflow-hidden shadow-2xl shadow-sky-500/20">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#0ea5e9] to-[#6366f1]" />
-              <motion.div
-                className="absolute inset-0 bg-white/20"
-                animate={{ opacity: [0, 0.4, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              />
-              <span className="absolute inset-0 flex items-center justify-center text-white font-black text-xl z-10">N</span>
-            </div>
-            <div>
-              <div className="text-white font-bold text-[24px] tracking-tight leading-none">Nova</div>
-              <div className="text-white/30 text-[11px] font-semibold tracking-widest uppercase mt-0.5">Workspace</div>
-            </div>
-          </div>
-        </motion.div>
+        {/* Particles */}
+        {([
+          [8, 14, '#0ea5e9', 3.8, 0.4],   [6, 80, '#6366f1', 4.5, 2.1],
+          [5, 38, '#22c55e', 5.2, 0.9],   [7, 90, '#0ea5e9', 3.5, 1.7],
+          [4, 22, '#6366f1', 6.0, 3.2],   [6, 65, '#f59e0b', 4.2, 0.5],
+          [5, 47, '#0ea5e9', 5.8, 2.8],   [4, 92, '#6366f1', 3.9, 1.3],
+          [7, 30, '#0ea5e9', 4.7, 0.2],   [3, 75, '#22c55e', 5.5, 2.5],
+        ] as [number, number, string, number, number][]).map(([sz, left, color, dur, delay], i) => (
+          <div
+            key={i}
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              width: sz, height: sz,
+              background: color,
+              left: `${left}%`,
+              top: `${[18, 12, 72, 35, 88, 25, 55, 65, 42, 78][i]}%`,
+              opacity: 0.25,
+              animation: `particleFloat ${dur}s ease-in-out ${delay}s infinite`,
+            }}
+          />
+        ))}
 
         {/* Card */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="relative rounded-3xl p-8"
-          style={{
-            background: 'rgba(255,255,255,0.045)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.09)',
-            boxShadow: '0 32px 80px -16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)',
-          }}
+          initial={{ opacity: 0, y: 32, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-10 w-full max-w-[420px] mx-4"
         >
-          {/* Inner top glow */}
-          <div
-            className="absolute top-0 left-8 right-8 h-px"
-            style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)' }}
-          />
-
-          <div className="mb-7">
-            <h1 className="text-white text-[22px] font-bold tracking-tight mb-1.5">Welcome back</h1>
-            <p className="text-white/35 text-[14px] font-medium">Sign in to your workspace</p>
-          </div>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <InputField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={setEmail}
-              placeholder="you@company.com"
-              autoFocus
-            />
-            <InputField
-              label="Password"
-              type={showPass ? 'text' : 'password'}
-              value={password}
-              onChange={setPassword}
-              placeholder="••••••••"
-              suffix={
-                <button type="button" onClick={() => setShowPass(!showPass)}
-                  className="text-white/25 hover:text-white/60 transition-colors">
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              }
-            />
-
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6, height: 0 }}
-                  animate={{ opacity: 1, y: 0, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="rounded-xl px-4 py-3 text-[13px] font-semibold text-red-400"
-                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}
-                >
-                  {error}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <motion.button
-              type="submit"
-              disabled={submitting}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              className="relative w-full font-bold py-3.5 rounded-xl text-[14px] text-white flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed overflow-hidden mt-2"
-              style={{
-                background: 'linear-gradient(135deg, #0ea5e9, #6366f1)',
-                boxShadow: '0 8px 28px -4px rgba(14,165,233,0.45)',
-              }}
+          {/* Logo */}
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col items-center mb-10"
+          >
+            <div
+              className="logo-glow w-[72px] h-[72px] rounded-3xl relative overflow-hidden mb-4"
+              style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)' }}
             >
-              {/* Shimmer */}
-              {!submitting && (
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
-                  initial={{ x: '-100%' }}
-                  animate={{ x: '200%' }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: 'linear', repeatDelay: 1 }}
-                />
-              )}
-              {submitting ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>Sign in <ArrowRight className="w-4 h-4" /></>
-              )}
-            </motion.button>
-          </form>
-        </motion.div>
+              <div
+                className="absolute inset-0 opacity-30"
+                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 60%)' }}
+              />
+              <motion.div
+                className="absolute inset-0 bg-white/20"
+                animate={{ opacity: [0, 0.35, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              <span className="absolute inset-0 flex items-center justify-center text-white font-black text-3xl z-10 tracking-tight">N</span>
+            </div>
+            <motion.h1
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.22, duration: 0.5 }}
+              className="text-white text-[28px] font-black tracking-tight leading-tight text-center"
+            >
+              Welcome to Nova
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.32 }}
+              className="text-white/35 text-[15px] font-medium mt-1.5 tracking-wide"
+            >
+              Your workspace. Your team.
+            </motion.p>
+          </motion.div>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="text-center text-white/15 text-[12px] mt-6 font-medium tracking-wide"
-        >
-          Invite-only access · Contact your admin to get started
-        </motion.p>
-      </motion.div>
-    </div>
+          {/* Frosted card */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            className="relative rounded-3xl p-8"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              backdropFilter: 'blur(32px)',
+              WebkitBackdropFilter: 'blur(32px)',
+              boxShadow: '0 40px 100px -20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1)',
+            }}
+          >
+            {/* Top highlight line */}
+            <div
+              className="absolute top-0 left-10 right-10 h-px rounded-full"
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent)' }}
+            />
+
+            <form onSubmit={handleLogin} className="space-y-5">
+              <DarkInput
+                label="Email"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="you@company.com"
+                autoFocus
+              />
+              <DarkInput
+                label="Password"
+                type={showPass ? 'text' : 'password'}
+                value={password}
+                onChange={setPassword}
+                placeholder="••••••••"
+                suffix={
+                  <button type="button" onClick={() => setShowPass(!showPass)}
+                    className="text-white/25 hover:text-white/60 transition-colors">
+                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                }
+              />
+
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="rounded-xl px-4 py-3 text-[13px] font-semibold text-red-400"
+                    style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}
+                  >
+                    {error}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="btn-shimmer relative w-full font-bold py-4 rounded-2xl text-[15px] text-white flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed overflow-hidden mt-2 transition-all hover:scale-[1.015] active:scale-[0.99]"
+                style={{
+                  background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
+                  boxShadow: '0 10px 32px -4px rgba(14,165,233,0.5)',
+                }}
+              >
+                <span
+                  className="shimmer-line absolute top-0 bottom-0 w-1/3 pointer-events-none"
+                  style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)', left: 0 }}
+                />
+                {submitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>Sign in <ArrowRight className="w-4 h-4" /></>
+                )}
+              </button>
+            </form>
+          </motion.div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-center text-white/18 text-[12px] mt-6 font-medium tracking-widest uppercase"
+          >
+            Invite only · Contact your admin
+          </motion.p>
+        </motion.div>
+      </div>
+    </>
   )
 }
 
-function InputField({
+function DarkInput({
   label, type, value, onChange, placeholder, autoFocus, suffix,
 }: {
   label: string
@@ -253,7 +290,7 @@ function InputField({
 }) {
   return (
     <div>
-      <label className="block text-white/40 text-[10px] font-bold mb-2 uppercase tracking-[0.1em]">{label}</label>
+      <label className="block text-white/35 text-[10px] font-bold mb-2 uppercase tracking-[0.12em]">{label}</label>
       <div className="relative">
         <input
           type={type}
@@ -262,19 +299,21 @@ function InputField({
           placeholder={placeholder}
           required
           autoFocus={autoFocus}
-          className="w-full rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/18 font-medium outline-none transition-all"
+          className="w-full rounded-xl px-4 py-3.5 text-[14px] text-white placeholder-white/18 font-medium outline-none transition-all"
           style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.09)',
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.1)',
             paddingRight: suffix ? '2.75rem' : '1rem',
           }}
           onFocus={(e) => {
-            e.target.style.borderColor = 'rgba(14,165,233,0.55)'
-            e.target.style.background = 'rgba(255,255,255,0.09)'
+            e.target.style.borderColor = 'rgba(14,165,233,0.65)'
+            e.target.style.background = 'rgba(255,255,255,0.1)'
+            e.target.style.boxShadow = '0 0 0 3px rgba(14,165,233,0.12)'
           }}
           onBlur={(e) => {
-            e.target.style.borderColor = 'rgba(255,255,255,0.09)'
-            e.target.style.background = 'rgba(255,255,255,0.06)'
+            e.target.style.borderColor = 'rgba(255,255,255,0.1)'
+            e.target.style.background = 'rgba(255,255,255,0.07)'
+            e.target.style.boxShadow = 'none'
           }}
         />
         {suffix && (
