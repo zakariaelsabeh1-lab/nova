@@ -41,26 +41,10 @@ export function LoginPage() {
   }
 
   const handleDemo = async () => {
-    setError('')
     setDemoLoading(true)
     setLoading(true)
-
-    const { data, error: err } = await supabase.auth.signInWithPassword({
-      email: 'demo@nova.app',
-      password: 'demo1234',
-    })
-
-    if (err) {
-      setError('Demo account unavailable. Ask your admin to run create_demo_user.sql.')
-      setDemoLoading(false)
-      setLoading(false)
-      return
-    }
-
-    if (data.user) {
-      await fetchProfile(data.user.id)
-    }
-
+    const { data } = await supabase.auth.signInWithPassword({ email: 'demo@nova.app', password: 'demo1234' })
+    if (data.user) await fetchProfile(data.user.id)
     setLoading(false)
     navigate('/', { replace: true })
   }

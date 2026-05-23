@@ -70,6 +70,10 @@ export function BoardPage() {
 
   const accentColor = board?.type ? boardColorMap[board.type] : (board?.color || '#0ea5e9')
   const BoardIcon = board?.type ? boardIconMap[board.type] : CheckSquare
+  const addButtonLabel: Record<string, string> = {
+    tasks: 'Add Task', projects: 'Add Project', assignments: 'Add Assignment', vacation: 'Add Vacation',
+  }
+  const addLabel = board?.type ? (addButtonLabel[board.type] || 'Add Task') : 'Add Task'
 
   return (
     <div className="flex flex-col h-full" style={{ background: '#0f172a' }}>
@@ -153,7 +157,7 @@ export function BoardPage() {
               }}
             >
               <Plus className="w-4 h-4" />
-              Add Task
+              {addLabel}
             </motion.button>
           </div>
         </div>
@@ -249,6 +253,7 @@ export function BoardPage() {
       {showCreate && hasColumns && (
         <CreateTaskModal
           boardId={boardId}
+          boardType={board?.type}
           columnId={createColumnId || columns[0]?.id}
           columns={columns}
           onClose={() => setShowCreate(false)}
