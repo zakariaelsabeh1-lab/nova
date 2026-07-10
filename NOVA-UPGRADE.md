@@ -165,3 +165,23 @@ projects `#8b5cf6`, assignments `#f59e0b`, vacation `#22c55e`.
 
 **Status: awaiting your go-ahead.** Nothing has been built. Once you answer the 5
 decisions in §5 (especially DnD, auth, and the CLAUDE.md cleanup), I'll start Phase 2.
+
+---
+
+## 7. Delivered (post-approval build)
+
+Approved decisions: **@dnd-kit**, **auth back on**, **CLAUDE.md cleaned up**,
+workspace layer + groups/columns model as proposed.
+
+| Phase | Delivered |
+|-------|-----------|
+| 2 · Migrations + data layer | `supabase/migrations/0001–0009`: workspaces, members, subscriptions, groups, typed `board_columns`, items, subitems, `cell_values`, updates, activity_log, files, automations, runs, notifications; additive backfill (lanes→groups, tasks→items+cells); membership+role RLS via SECURITY DEFINER helpers; server-side plan-limit triggers; storage buckets; realtime publication. React Query data layer in `src/lib/db/*` with optimistic updates + toasts. |
+| 3 · Table view | Cell-renderer registry (all 9 column types) with inline edit; collapsible colored groups; column add/rename/reorder/resize/delete + editable status labels; group sums; item/group/column drag via @dnd-kit (keyboard accessible). |
+| 4 · Alternate views | Kanban (drag between status lanes), Calendar (month grid), Timeline/Gantt (bars + today marker), Dashboard (recharts). Timeline & Dashboard behind `<Gate>`. |
+| 5 · Item panel + realtime | Slide-over with Details (+ subitems), Updates (threaded + @mentions), Activity log, Files (storage upload/preview); Supabase realtime board sync + presence avatars; viewer role RLS-enforced. |
+| 6 · Automations + notifications + My Work + search | Recipe builder (when status → notify/move/set date) with run log + prebuilt recipes; notifications bell/panel (mentions, assignments, automations); My Work bucketed by due date; global ⌘K search. |
+| 7 · Premium | Stripe `/api` functions (checkout, portal, signed webhook); `usePlan()` + `<Gate>` + paywall; billing page with usage bars; server-side limit enforcement; Pro badge. |
+| 8 · Settings, polish, testing | Avatar upload, workspace members table with roles, duplicate board, CSV export (gated); optimistic updates + toasts + skeletons + empty states throughout; README (env, Stripe, `stripe listen`, migrations); Playwright smoke tests; vendor chunk splitting. Build + typecheck + lint (0 errors) green. |
+
+Remaining setup is operational, not code: create the Stripe product/prices and set
+the env vars, run the migrations, and enable the account. See README.
