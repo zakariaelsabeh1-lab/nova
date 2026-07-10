@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.4.0",
     "@radix-ui/react-avatar": "^1.1.11",
@@ -25,6 +28,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@stripe/stripe-js": "^9.9.0",
     "@supabase/auth-helpers-react": "^0.15.0",
     "@supabase/supabase-js": "^2.106.1",
     "@tanstack/react-query": "^5.100.14",
@@ -36,7 +40,10 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.76.1",
+    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.15.1",
+    "recharts": "^3.9.2",
+    "stripe": "^22.3.1",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.13"
