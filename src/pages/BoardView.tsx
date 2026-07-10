@@ -16,6 +16,8 @@ import {
 } from '@/lib/db/board-data'
 import { useMembers, useMyRole, usePlan } from '@/lib/db/workspaces'
 import { useAutomations, runAutomationsForStatusChange } from '@/lib/db/automations'
+import { notify } from '@/lib/db/notifications'
+import { useAuthStore } from '@/store/authStore'
 import { useCurrentWorkspaceId } from '@/lib/db/workspaces'
 import { useBoardRealtime } from '@/lib/db/realtime'
 import { supabase } from '@/lib/supabase'
@@ -42,6 +44,7 @@ const VIEWS: { id: ViewId; label: string; icon: typeof List; pro?: boolean }[] =
 export function BoardView() {
   const { boardId = '' } = useParams()
   const workspaceId = useCurrentWorkspaceId()
+  const me = useAuthStore((s) => s.user)
   const { data: board } = useBoard(boardId)
   const { groups, columns, items, isLoading } = useBoardData(boardId)
   const { data: members = [] } = useMembers(workspaceId)
@@ -89,6 +92,22 @@ export function BoardView() {
   // ── Cell change with automation execution on status change ────────────────
   const handleSetCell = async (itemId: string, columnId: string, value: CellValue, column: BoardColumn, old: CellValue) => {
     setCell.mutate({ itemId, columnId, value, _meta: { columnName: column.name, old } })
+
+    // Assignment notification: notify a newly-assigned person (feature 9)
+    if (column.type === 'person' && typeof value === 'string' && value && value !== old && value !== me?.id) {
+      const item = items.find((i) => i.id === itemId)
+      notify({
+        userId: value,
+        type: 'assignment',
+        title: `${me?.full_name ?? 'Someone'} assigned you an item`,
+        body: item?.name ? `"${item.name}" on ${board?.name ?? 'a board'}` : 'You were assigned an item',
+        itemId,
+        boardId,
+        workspaceId,
+        actorId: me?.id,
+      })
+    }
+
     if (column.type === 'status' && typeof value === 'string' && value) {
       const item = items.find((i) => i.id === itemId)
       if (!item) return

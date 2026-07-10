@@ -107,8 +107,11 @@ async function provisionTemplate(boardId: string, tpl: BoardTemplate) {
     .select()
   if (colErr) throw colErr
   const statusCol = cols?.find((c) => c.type === 'status')
+  const personCol = cols?.find((c) => c.type === 'person')
+  const dateCol = cols?.find((c) => c.type === 'date')
 
   // groups + items
+  const groupIds: string[] = []
   for (let gi = 0; gi < tpl.groups.length; gi++) {
     const g = tpl.groups[gi]
     const { data: group, error: gErr } = await supabase
@@ -117,6 +120,7 @@ async function provisionTemplate(boardId: string, tpl: BoardTemplate) {
       .select()
       .single()
     if (gErr) throw gErr
+    groupIds.push(group.id)
     for (let ii = 0; ii < g.items.length; ii++) {
       const it = g.items[ii]
       const { data: item, error: iErr } = await supabase
@@ -134,6 +138,28 @@ async function provisionTemplate(boardId: string, tpl: BoardTemplate) {
             .insert({ item_id: item.id, column_id: statusCol.id, value: firstLabel })
         }
       }
+    }
+  }
+
+  // 3 prebuilt automation recipes per template (feature 8)
+  if (statusCol) {
+    const labels = Object.keys(statusCol.settings?.labels ?? {})
+    const doneLabel = labels.find((l) => /done|complete|won|publish/i.test(l)) ?? labels[labels.length - 1]
+    const stuckLabel = labels.find((l) => /stuck|blocked|lost|review/i.test(l)) ?? labels[0]
+    const lastGroup = groupIds[groupIds.length - 1]
+    const recipes: { name: string; to: string; actions: { type: string; columnId?: string; groupId?: string; value?: string }[] }[] = []
+    if (doneLabel && personCol) recipes.push({ name: `Notify owner when ${doneLabel}`, to: doneLabel, actions: [{ type: 'notify_person', columnId: personCol.id }] })
+    if (doneLabel && lastGroup) recipes.push({ name: `Move to done group when ${doneLabel}`, to: doneLabel, actions: [{ type: 'move_to_group', groupId: lastGroup }] })
+    if (stuckLabel && dateCol) recipes.push({ name: `Set date when ${stuckLabel}`, to: stuckLabel, actions: [{ type: 'set_date', columnId: dateCol.id, value: 'today' }] })
+    if (recipes.length) {
+      await supabase.from('automations').insert(
+        recipes.map((r) => ({
+          board_id: boardId,
+          name: r.name,
+          trigger: { type: 'status_changes', columnId: statusCol.id, to: r.to },
+          actions: r.actions,
+        }))
+      )
     }
   }
 }

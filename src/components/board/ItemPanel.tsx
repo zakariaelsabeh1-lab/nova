@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, MessageSquare, Activity as ActivityIcon, Paperclip, LayoutList, Send, Trash2, Upload, FileText, Loader2, CornerDownRight,
+  Plus, CheckSquare, Square, ListChecks,
 } from 'lucide-react'
 import type { BoardColumn, ItemWithCells, WorkspaceMember, CellValue, Update } from '@/types'
 import { Cell } from './cells'
 import { useUpdates, useCreateUpdate, useDeleteUpdate, useItemFiles, useUploadFile, useDeleteFile } from '@/lib/db/collab'
+import { useSubitems, useCreateSubitem, useUpdateSubitem, useDeleteSubitem } from '@/lib/db/board-data'
 import { useItemActivity, formatActivityValue } from '@/lib/db/activity'
 import { useAuthStore } from '@/store/authStore'
 import { getInitials, formatDateTime } from '@/lib/utils'
@@ -132,7 +134,62 @@ function DetailsTab({
           </div>
         ))}
       </div>
+      <SubitemsSection itemId={item.id} readOnly={readOnly} />
     </TabWrap>
+  )
+}
+
+// ── Subitems (checklist) ────────────────────────────────────────────────────
+function SubitemsSection({ itemId, readOnly }: { itemId: string; readOnly: boolean }) {
+  const { data: subitems = [] } = useSubitems(itemId)
+  const create = useCreateSubitem(itemId)
+  const update = useUpdateSubitem(itemId)
+  const del = useDeleteSubitem(itemId)
+  const [name, setName] = useState('')
+  const done = subitems.filter((s) => (s.values as { done?: boolean })?.done).length
+
+  return (
+    <div className="mt-6">
+      <div className="flex items-center gap-2 mb-2.5">
+        <ListChecks className="w-4 h-4 text-[#8b5cf6]" />
+        <h3 className="text-[13px] font-bold text-[#0f172a]">Subitems</h3>
+        {subitems.length > 0 && <span className="text-[12px] text-[#94a3b8]">{done}/{subitems.length}</span>}
+      </div>
+      <div className="space-y-1">
+        {subitems.map((s) => {
+          const isDone = Boolean((s.values as { done?: boolean })?.done)
+          return (
+            <div key={s.id} className="flex items-center gap-2.5 py-1.5 group">
+              <button
+                disabled={readOnly}
+                onClick={() => update.mutate({ id: s.id, values: { ...s.values, done: !isDone } })}
+                className="flex-shrink-0"
+              >
+                {isDone ? <CheckSquare className="w-4 h-4 text-[#22c55e]" /> : <Square className="w-4 h-4 text-[#cbd5e1]" />}
+              </button>
+              <span className={`flex-1 text-[13px] ${isDone ? 'text-[#94a3b8] line-through' : 'text-[#0f172a]'}`}>{s.name}</span>
+              {!readOnly && (
+                <button onClick={() => del.mutate(s.id)} className="opacity-0 group-hover:opacity-100 text-[#cbd5e1] hover:text-[#ef4444]">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      {!readOnly && (
+        <div className="flex items-center gap-2 mt-1.5">
+          <Plus className="w-3.5 h-3.5 text-[#cbd5e1]" />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) { create.mutate({ name: name.trim(), position: subitems.length }); setName('') } }}
+            placeholder="Add a subitem"
+            className="flex-1 text-[13px] text-[#0f172a] placeholder-[#94a3b8] outline-none bg-transparent py-1"
+          />
+        </div>
+      )}
+    </div>
   )
 }
 

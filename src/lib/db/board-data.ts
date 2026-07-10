@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { logActivity } from './activity'
-import type { Group, BoardColumn, Item, Cell, ItemWithCells, CellValue, ColumnType } from '@/types'
+import type { Group, BoardColumn, Item, Cell, ItemWithCells, CellValue, ColumnType, Subitem } from '@/types'
 
 // ── Groups ──────────────────────────────────────────────────────────────────
 export function useGroups(boardId: string) {
@@ -210,6 +210,63 @@ export function useReorderItems(boardId: string) {
       )
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ['items', boardId] }),
+  })
+}
+
+// ── Subitems (lightweight checklist under an item) ──────────────────────────
+export function useSubitems(itemId: string) {
+  return useQuery({
+    queryKey: ['subitems', itemId],
+    enabled: !!itemId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subitems')
+        .select('*')
+        .eq('parent_item_id', itemId)
+        .order('position')
+      if (error) throw error
+      return data as Subitem[]
+    },
+  })
+}
+
+export function useCreateSubitem(itemId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ name, position }: { name: string; position: number }) => {
+      const { error } = await supabase.from('subitems').insert({ parent_item_id: itemId, name, position, values: { done: false } })
+      if (error) throw error
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['subitems', itemId] }),
+  })
+}
+
+export function useUpdateSubitem(itemId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Subitem> & { id: string }) => {
+      const { error } = await supabase.from('subitems').update(updates).eq('id', id)
+      if (error) throw error
+    },
+    onMutate: async ({ id, ...updates }) => {
+      await qc.cancelQueries({ queryKey: ['subitems', itemId] })
+      const prev = qc.getQueryData<Subitem[]>(['subitems', itemId])
+      qc.setQueryData<Subitem[]>(['subitems', itemId], (old) => (old ?? []).map((s) => (s.id === id ? { ...s, ...updates } : s)))
+      return { prev }
+    },
+    onError: (_e, _v, ctx) => ctx?.prev && qc.setQueryData(['subitems', itemId], ctx.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['subitems', itemId] }),
+  })
+}
+
+export function useDeleteSubitem(itemId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('subitems').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['subitems', itemId] }),
   })
 }
 
