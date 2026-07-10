@@ -88,7 +88,6 @@ export function useSetCell(boardId: string) {
       itemId: string
       columnId: string
       value: CellValue
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       _meta?: { columnName?: string; old?: CellValue }
     }) => {
       const { error } = await supabase
