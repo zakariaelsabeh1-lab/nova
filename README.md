@@ -66,6 +66,29 @@ The migrations also create two storage buckets (`avatars`, `attachments`) and
 enforce plan limits server-side via triggers, so the client cannot bypass them
 by calling the API directly.
 
+### One-command staging setup + verification
+
+Apply everything and smoke-test a staging project in a single command. Grab the
+direct connection string from **Supabase → Project Settings → Database →
+Connection string → URI** (use the direct connection, not the pooler, for DDL):
+
+```bash
+SUPABASE_DB_URL="postgresql://postgres:PASSWORD@db.<ref>.supabase.co:5432/postgres" \
+  npm run verify:staging -- --fresh
+```
+
+Flags:
+
+- `--fresh` — also apply `supabase/schema.sql` first (brand-new project).
+- `--no-migrate` — skip DDL and only run the verification.
+- `--seed-demo` — insert a persistent **Demo Workspace** board for manual QA.
+
+The verifier (`supabase/verify/verify.sql`) creates an isolated throwaway
+workspace, asserts the profile/workspace triggers, plan-limit enforcement
+(boards/members/automations), and RLS helper functions all behave, then **rolls
+itself back** so staging is left untouched. It exits non-zero on any failed
+check. Run it against staging before pointing production at the migrations.
+
 ## Stripe setup (test mode)
 
 1. In the Stripe dashboard (test mode) create a **Product** "Nova Pro" with two
