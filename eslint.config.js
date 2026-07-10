@@ -18,5 +18,11 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Underscore-prefixed args/vars are intentionally unused.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      // We use the controlled prop→state sync pattern in a few cells/rows.
+      'react-hooks/set-state-in-effect': 'warn',
+    },
   },
 ])

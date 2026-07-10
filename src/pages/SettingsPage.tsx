@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Bell, Lock, Camera, Check, Loader2, Shield, Sparkles } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useUpdateProfile } from '@/lib/queries'
 import { supabase } from '@/lib/supabase'
 import { getInitials, isDemoUser } from '@/lib/utils'
+import { notifyError, notifySuccess, errorMessage } from '@/lib/toast'
 
 type Tab = 'profile' | 'notifications' | 'security'
 
@@ -36,6 +37,28 @@ export function SettingsPage() {
   const [pwError, setPwError] = useState('')
 
   const updateProfile = useUpdateProfile()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+    setUploadingAvatar(true)
+    try {
+      const path = `${user.id}/${Date.now()}-${file.name}`
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (upErr) throw upErr
+      const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
+      await updateProfile.mutateAsync({ id: user.id, avatar_url: url })
+      await fetchProfile(user.id)
+      notifySuccess('Avatar updated')
+    } catch (err) {
+      notifyError(errorMessage(err, 'Upload failed'))
+    } finally {
+      setUploadingAvatar(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
 
   const handleSaveProfile = async () => {
     if (!user) return
@@ -139,12 +162,23 @@ export function SettingsPage() {
               {/* Avatar section */}
               <div className="flex items-center gap-4 md:gap-5 mb-6 md:mb-7 p-4 md:p-5 bg-[#f8fafc] rounded-2xl border border-[#f1f5f9]">
                 <div className="relative flex-shrink-0">
-                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-[#0ea5e9] to-[#0284c7] flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-sky-200">
-                    {user ? getInitials(user.full_name || user.email) : '?'}
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-[#0ea5e9] to-[#0284c7] flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-sky-200">
+                    {user?.avatar_url ? (
+                      <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : user ? (
+                      getInitials(user.full_name || user.email)
+                    ) : (
+                      '?'
+                    )}
                   </div>
-                  <button className="absolute -bottom-1 -right-1 w-7 h-7 bg-white border-2 border-[#f1f5f9] rounded-full flex items-center justify-center text-[#64748b] hover:bg-[#f1f5f9] shadow-md transition-colors">
-                    <Camera className="w-3 h-3" />
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    disabled={isDemo || uploadingAvatar}
+                    className="absolute -bottom-1 -right-1 w-7 h-7 bg-white border-2 border-[#f1f5f9] rounded-full flex items-center justify-center text-[#64748b] hover:bg-[#f1f5f9] shadow-md transition-colors disabled:opacity-50"
+                  >
+                    {uploadingAvatar ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
                   </button>
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] md:text-[15px] font-bold text-[#0f172a] leading-tight truncate">{user?.full_name || user?.email}</p>
