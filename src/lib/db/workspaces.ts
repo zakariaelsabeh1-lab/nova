@@ -130,6 +130,39 @@ export function useCreateWorkspace() {
   })
 }
 
+// Invite a member: add existing users directly, otherwise store a pending invite.
+export function useInviteMember(workspaceId: string | null) {
+  const qc = useQueryClient()
+  const userId = useAuthStore((s) => s.user?.id)
+  return useMutation({
+    mutationFn: async ({ email, role }: { email: string; role: UserRole }) => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email.toLowerCase().trim())
+        .maybeSingle()
+      if (profile) {
+        const { error } = await supabase
+          .from('workspace_members')
+          .insert({ workspace_id: workspaceId, user_id: profile.id, role })
+        if (error) throw error // surfaces PLAN_LIMIT + duplicate errors
+        return { added: true as const }
+      }
+      const { error } = await supabase
+        .from('invites')
+        .insert({ email: email.toLowerCase().trim(), role, invited_by: userId, workspace_id: workspaceId })
+      if (error) throw error
+      supabase.functions
+        .invoke('send-notification', { body: { type: 'invite', email, role } })
+        .catch(() => {})
+      return { added: false as const }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['members', workspaceId] })
+    },
+  })
+}
+
 // Convenience hook consumed by <Gate> and billing UI.
 export function usePlan(workspaceId: string | null) {
   const { data: sub, isLoading } = useSubscription(workspaceId)

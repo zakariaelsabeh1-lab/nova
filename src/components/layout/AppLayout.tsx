@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Menu } from 'lucide-react'
 import { Sidebar } from './Sidebar'
+import { CommandK } from './CommandK'
 
 export function AppLayout() {
   const location = useLocation()
@@ -25,6 +26,7 @@ export function AppLayout() {
       </AnimatePresence>
 
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <CommandK />
 
       <AnimatePresence mode="wait">
         <motion.main
