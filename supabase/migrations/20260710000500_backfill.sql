@@ -26,7 +26,10 @@ begin
   -- 1. Default workspace (only if none exists yet)
   select id into ws_id from public.workspaces limit 1;
   if ws_id is null then
-    select id into first_user from public.profiles order by created_at limit 1;
+    -- Prefer an existing admin as the owner; deterministic tiebreak on created_at then id.
+    select id into first_user from public.profiles
+      order by (role = 'admin') desc, created_at asc, id asc
+      limit 1;
     insert into public.workspaces (name, slug, owner_id)
     values ('My Workspace', 'my-workspace', first_user)
     returning id into ws_id;
