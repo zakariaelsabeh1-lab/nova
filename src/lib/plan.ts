@@ -1,5 +1,15 @@
 import type { Plan } from '@/types'
 
+// ── App owner / super access ────────────────────────────────────────────────
+// These accounts always get full (Pro) access without paying, for testing and
+// ownership. Keep in sync with the workspace_plan() override in the database
+// (migration 0012) so server-side plan limits don't block them either.
+export const SUPER_OWNER_EMAILS = new Set(['zack.elsabeh@hotmail.com'])
+
+export function isSuperOwner(email?: string | null): boolean {
+  return !!email && SUPER_OWNER_EMAILS.has(email.toLowerCase())
+}
+
 // ── Feature flags gated by plan ─────────────────────────────────────────────
 export type GatedFeature =
   | 'timeline_view'

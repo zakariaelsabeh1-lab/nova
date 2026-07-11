@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { useAuthStore } from '@/store/authStore'
 import type { Workspace, WorkspaceMember, Subscription, Plan, UserRole } from '@/types'
-import { PLAN_LIMITS } from '@/lib/plan'
+import { PLAN_LIMITS, isSuperOwner } from '@/lib/plan'
 
 // ── Workspaces the current user belongs to ──────────────────────────────────
 export function useWorkspaces() {
@@ -185,7 +185,17 @@ export function useInviteMember(workspaceId: string | null) {
 
 // Convenience hook consumed by <Gate> and billing UI.
 export function usePlan(workspaceId: string | null) {
+  const email = useAuthStore((s) => s.user?.email)
   const { data: sub, isLoading } = useSubscription(workspaceId)
-  const plan: Plan = sub?.plan ?? 'free'
-  return { plan, limits: PLAN_LIMITS[plan], subscription: sub, isLoading, isPro: plan === 'pro' }
+  // App owner always has full access without a subscription (matches the
+  // server-side workspace_plan() override in migration 0012).
+  const owner = isSuperOwner(email)
+  const plan: Plan = owner ? 'pro' : sub?.plan ?? 'free'
+  return {
+    plan,
+    limits: PLAN_LIMITS[plan],
+    subscription: sub,
+    isLoading: owner ? false : isLoading,
+    isPro: plan === 'pro',
+  }
 }

@@ -9,31 +9,53 @@ export function useAuthInit() {
 
   useEffect(() => {
     let mounted = true
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return
-      setSession(session)
-      try {
-        if (session?.user) await fetchProfile(session.user.id)
-      } finally {
-        setLoading(false) // never leave the app stuck on the loading screen
+    let settled = false
+    const settle = () => {
+      if (mounted && !settled) {
+        settled = true
+        setLoading(false)
       }
-    })
+    }
+
+    // Safety net: never let a hung getSession()/profile fetch pin the app on the
+    // loading screen. On a reopened tab a stuck token refresh or the auth lock
+    // held by another tab can make getSession() hang or reject; without this the
+    // app "won't load unless you switch browsers". Force boot to complete.
+    const safety = setTimeout(settle, 4000)
+
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session } }) => {
+        if (!mounted) return
+        setSession(session)
+        try {
+          if (session?.user) await fetchProfile(session.user.id)
+        } catch {
+          /* a missing/slow profile shouldn't block boot */
+        } finally {
+          settle()
+        }
+      })
+      .catch(() => settle()) // getSession can reject on a bad persisted session
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return
       setSession(session)
       try {
         if (session?.user) await fetchProfile(session.user.id)
         else setUser(null)
+      } catch {
+        /* ignore */
       } finally {
-        setLoading(false)
+        settle()
       }
     })
 
     return () => {
       mounted = false
+      clearTimeout(safety)
       subscription.unsubscribe()
     }
   }, [setSession, setUser, setLoading, fetchProfile])
