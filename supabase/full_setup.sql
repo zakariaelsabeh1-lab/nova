@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Nova — full one-shot setup for a fresh Supabase project.
 -- Paste this entire file into the Supabase SQL editor and Run.
--- It applies the base schema + all 9 migrations in order (idempotent).
+-- It applies the base schema + all migrations in order (idempotent).
 -- Generated from supabase/schema.sql + supabase/migrations/*.sql
 -- ============================================================================
 
@@ -883,3 +883,15 @@ begin
     end if;
   end loop;
 end $$;
+
+-- ==================== migration: 20260710001000_profiles_self_heal.sql ====================
+-- ============================================================================
+-- 0010 · Let a signed-in user create their OWN profile row.
+-- Accounts created before the handle_new_user trigger existed have no profile,
+-- which breaks workspace creation (owner_id FK + RLS). With this policy the app
+-- can self-heal by inserting the missing profile on login.
+-- ============================================================================
+
+drop policy if exists profiles_insert on public.profiles;
+create policy profiles_insert on public.profiles
+  for insert with check (auth.uid() = id);
