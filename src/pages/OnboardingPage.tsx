@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Loader2, Check, Building2, LayoutTemplate } from 'lucide-react'
@@ -11,6 +12,7 @@ import { errorMessage, notifyError } from '@/lib/toast'
 
 export function OnboardingPage() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const createWorkspace = useCreateWorkspace()
   const createBoard = useCreateBoard()
@@ -27,9 +29,11 @@ export function OnboardingPage() {
       const ws = await createWorkspace.mutateAsync(wsName.trim() || 'My Workspace')
       setWorkspace(ws.id)
       await qc.invalidateQueries({ queryKey: ['workspaces'] })
-      await createBoard.mutateAsync({ workspaceId: ws.id, name: TEMPLATES.find((t) => t.key === templateKey)!.label, templateKey })
+      const board = await createBoard.mutateAsync({ workspaceId: ws.id, name: TEMPLATES.find((t) => t.key === templateKey)!.label, templateKey })
       await qc.invalidateQueries({ queryKey: ['ws-boards', ws.id] })
-      // App will route into the workspace on next render
+      // Route into the new board. RequireWorkspace now sees the workspace, so
+      // this no longer bounces back to /onboarding.
+      navigate(`/board/${board.id}`, { replace: true })
     } catch (e) {
       notifyError(errorMessage(e, 'Could not set up your workspace'))
       setBusy(false)
