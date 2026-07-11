@@ -113,14 +113,34 @@ export function useSubscription(workspaceId: string | null) {
 // Create a new workspace (used by onboarding)
 export function useCreateWorkspace() {
   const qc = useQueryClient()
-  const userId = useAuthStore((s) => s.user?.id)
   return useMutation({
     mutationFn: async (name: string) => {
+      // Read the owner id from the LIVE auth session, not the profile store —
+      // this guarantees owner_id === auth.uid() even if the profile hasn't
+      // loaded, which is what the workspaces RLS insert check requires.
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      if (!authUser) throw new Error('You are not signed in. Please log out and sign in again.')
+
+      // Self-heal: make sure a profile row exists before the owner_id FK insert.
+      await supabase.from('profiles').upsert(
+        {
+          id: authUser.id,
+          email: authUser.email ?? '',
+          full_name:
+            (authUser.user_metadata?.full_name as string | undefined) ||
+            authUser.email?.split('@')[0] ||
+            '',
+        },
+        { onConflict: 'id', ignoreDuplicates: true }
+      )
+
       const slug =
         name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') + '-' + Date.now().toString(36)
       const { data, error } = await supabase
         .from('workspaces')
-        .insert({ name, slug, owner_id: userId })
+        .insert({ name, slug, owner_id: authUser.id })
         .select()
         .single()
       if (error) throw error
