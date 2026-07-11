@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '@/store/authStore'
+import { supabaseConfigured } from '@/lib/supabase'
 import { useAuthInit } from '@/lib/auth'
 import { useWorkspaces } from '@/lib/db/workspaces'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -55,10 +56,38 @@ function RequireWorkspace({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+function ConfigError() {
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center p-6"
+      style={{ background: 'linear-gradient(135deg, #060c18 0%, #0f172a 60%, #1e1b4b 100%)' }}
+    >
+      <div className="max-w-[440px] w-full rounded-3xl p-7" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="w-11 h-11 rounded-2xl bg-[#ef4444]/15 flex items-center justify-center mb-4">
+          <span className="text-[#ef4444] text-xl font-black">!</span>
+        </div>
+        <h1 className="text-white text-[18px] font-bold mb-2">Supabase isn't configured</h1>
+        <p className="text-white/50 text-[13.5px] leading-relaxed mb-4">
+          Create a <code className="text-[#38bdf8]">.env</code> file in the project root with your
+          project URL and anon key, then restart the dev server (Vite only reads env at startup):
+        </p>
+        <pre className="text-[12px] text-white/70 bg-black/30 rounded-xl p-3 overflow-x-auto mb-4">
+{`VITE_SUPABASE_URL=https://<ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your anon / publishable key>`}
+        </pre>
+        <p className="text-white/35 text-[12px]">
+          Find both under Supabase → Project Settings → API. Then stop and re-run <code className="text-[#38bdf8]">npm run dev</code>.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   useAuthInit()
   const loading = useAuthStore((s) => s.loading)
 
+  if (!supabaseConfigured) return <ConfigError />
   if (loading) return <AppLoader />
 
   return (
