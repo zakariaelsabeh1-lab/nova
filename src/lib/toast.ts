@@ -25,7 +25,17 @@ export const dismissToast = (id: string) => toast.dismiss(id)
 
 // Extracts a friendly message from a Supabase/plan-limit error.
 export function errorMessage(e: unknown, fallback = 'Something went wrong'): string {
-  const msg = e instanceof Error ? e.message : typeof e === 'string' ? e : ''
+  let msg = ''
+  if (e instanceof Error) {
+    msg = e.message
+  } else if (typeof e === 'string') {
+    msg = e
+  } else if (e && typeof e === 'object') {
+    // Supabase/PostgREST errors are plain objects, not Error instances.
+    const o = e as { message?: unknown; details?: unknown; hint?: unknown }
+    const parts = [o.message, o.details, o.hint].filter((p): p is string => typeof p === 'string' && p.length > 0)
+    msg = parts.join(' — ')
+  }
   if (msg.includes('PLAN_LIMIT:')) return msg.split('PLAN_LIMIT:')[1].trim()
   return msg || fallback
 }
