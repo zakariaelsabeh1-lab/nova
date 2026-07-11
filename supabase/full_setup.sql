@@ -599,7 +599,10 @@ alter table public.automation_runs   enable row level security;
 
 -- ── Workspaces ──────────────────────────────────────────────────────────────
 drop policy if exists ws_select on public.workspaces;
-create policy ws_select on public.workspaces for select using (is_workspace_member(id));
+-- Owner can read their own workspace (needed so insert().select() returns the row
+-- before the membership trigger's row is visible); members see theirs too.
+create policy ws_select on public.workspaces for select
+  using (owner_id = auth.uid() or is_workspace_member(id));
 drop policy if exists ws_insert on public.workspaces;
 create policy ws_insert on public.workspaces for insert with check (auth.uid() = owner_id);
 drop policy if exists ws_update on public.workspaces;

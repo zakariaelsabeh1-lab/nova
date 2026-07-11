@@ -4,7 +4,15 @@
       "Bash(npm run *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git commit *)",
+      "Bash(npx tsc *)",
+      "Bash(npx vercel *)",
+      "Bash(git fetch *)",
+      "Bash(git rev-list *)",
+      "Bash(git stash *)",
+      "Bash(git merge *)",
+      "Bash(git checkout *)"
     ]
   }
 }
