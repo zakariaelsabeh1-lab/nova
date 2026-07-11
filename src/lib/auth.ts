@@ -13,20 +13,23 @@ export function useAuthInit() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return
       setSession(session)
-      if (session?.user) await fetchProfile(session.user.id)
-      setLoading(false)
+      try {
+        if (session?.user) await fetchProfile(session.user.id)
+      } finally {
+        setLoading(false) // never leave the app stuck on the loading screen
+      }
     })
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
-      if (session?.user) {
-        await fetchProfile(session.user.id)
-      } else {
-        setUser(null)
+      try {
+        if (session?.user) await fetchProfile(session.user.id)
+        else setUser(null)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     })
 
     return () => {

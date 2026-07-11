@@ -26,7 +26,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: null, session: null })
   },
   fetchProfile: async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
-    if (data) set({ user: data as Profile })
+    // maybeSingle: a missing profile is a normal state (e.g. account created
+    // before the schema was applied), not an error to throw on.
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+    set({ user: (data as Profile) ?? null })
   },
 }))
