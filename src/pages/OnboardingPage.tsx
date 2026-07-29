@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Loader2, Check, Building2, LayoutTemplate } from 'lucide-react'
-import { useCreateWorkspace } from '@/lib/db/workspaces'
+import { useCreateWorkspace, useWorkspaces } from '@/lib/db/workspaces'
 import { useCreateBoard } from '@/lib/db/boards'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { useAuthStore } from '@/store/authStore'
@@ -17,12 +17,19 @@ export function OnboardingPage() {
   const createWorkspace = useCreateWorkspace()
   const createBoard = useCreateBoard()
   const setWorkspace = useWorkspaceStore((s) => s.setWorkspace)
+  // Safety net: if a workspace already exists (e.g. reload landed here before the
+  // workspace query resolved), go straight into the app instead of getting stuck.
+  const { data: existingWorkspaces } = useWorkspaces()
 
   const [step, setStep] = useState(0)
   const [wsName, setWsName] = useState(user?.full_name ? `${user.full_name.split(' ')[0]}'s Workspace` : 'My Workspace')
   const [templateKey, setTemplateKey] = useState('project_plan')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+
+  if (existingWorkspaces && existingWorkspaces.length > 0) {
+    return <Navigate to="/" replace />
+  }
 
   const finish = async () => {
     setBusy(true)

@@ -22,8 +22,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   setSession: (session) => set({ session }),
   setLoading: (loading) => set({ loading }),
   signOut: async () => {
-    await supabase.auth.signOut()
+    // Clear state first so the UI reacts immediately, use local scope so it can't
+    // hang on a server round-trip, then wipe persisted state and hard-redirect.
     set({ user: null, session: null })
+    try {
+      await supabase.auth.signOut({ scope: 'local' })
+    } catch {
+      /* ignore */
+    }
+    try {
+      localStorage.clear()
+    } catch {
+      /* ignore */
+    }
+    window.location.href = '/login'
   },
   fetchProfile: async (userId: string) => {
     // maybeSingle: a missing profile is a normal state (e.g. account created

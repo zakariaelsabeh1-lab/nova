@@ -133,7 +133,8 @@ export const TEMPLATES: BoardTemplate[] = [
     icon: 'Palmtree',
     columns: [
       STATUS({ Requested: '#f59e0b', Approved: '#22c55e', Declined: '#ef4444' }),
-      { name: 'Employee', type: 'person', width: 150 },
+      { name: 'Requested by', type: 'person', width: 150 }, // the staff member
+      { name: 'Manager', type: 'person', width: 140 }, // the approver
       // second status column = colored "tags" for the kind of leave
       {
         name: 'Leave type',
@@ -167,6 +168,96 @@ export const TEMPLATES: BoardTemplate[] = [
     groups: [
       { name: 'This week', color: '#0ea5e9', items: [{ name: 'Finish onboarding flow' }, { name: 'Review pull requests' }] },
       { name: 'Later', color: '#94a3b8', items: [{ name: 'Plan next quarter' }] },
+    ],
+  },
+  {
+    key: 'hiring',
+    label: 'Hiring Pipeline',
+    description: 'Move candidates through interview stages to offer.',
+    color: '#8b5cf6',
+    icon: 'Users',
+    columns: [
+      STATUS({ Applied: '#94a3b8', Screening: '#0ea5e9', Interview: '#f59e0b', Offer: '#8b5cf6', Hired: '#22c55e', Rejected: '#ef4444' }),
+      { name: 'Recruiter', type: 'person', width: 140 },
+      { name: 'Role', type: 'text', width: 150 },
+      { name: 'Interview date', type: 'date', width: 150 },
+      { name: 'Rating', type: 'number', width: 90 },
+    ],
+    groups: [
+      { name: 'Active candidates', color: '#8b5cf6', items: [{ name: 'Jane Doe — Engineer' }, { name: 'Sam Lee — Designer' }] },
+      { name: 'Sourcing', color: '#94a3b8', items: [{ name: 'Open: Sales Rep' }] },
+    ],
+  },
+  {
+    key: 'clients',
+    label: 'Client Projects',
+    description: 'Track deliverables, owners and deadlines per client.',
+    color: '#0284c7',
+    icon: 'Briefcase',
+    columns: [
+      STATUS({ 'Not started': '#94a3b8', 'In progress': '#0ea5e9', 'Client review': '#f59e0b', Delivered: '#22c55e' }),
+      { name: 'Account manager', type: 'person', width: 150 },
+      { name: 'Timeline', type: 'timeline', width: 200 },
+      { name: 'Priority', type: 'priority', width: 120 },
+      { name: 'Value', type: 'number', width: 120, settings: { unit: '$', showSum: true } },
+    ],
+    groups: [
+      { name: 'Acme Co.', color: '#0284c7', items: [{ name: 'Website redesign' }, { name: 'SEO audit' }] },
+      { name: 'Globex', color: '#8b5cf6', items: [{ name: 'Brand refresh' }] },
+    ],
+  },
+  {
+    key: 'bugs',
+    label: 'Bug Tracker',
+    description: 'Report, triage and resolve product bugs.',
+    color: '#ef4444',
+    icon: 'Bug',
+    columns: [
+      STATUS({ New: '#94a3b8', Triaged: '#0ea5e9', 'In progress': '#f59e0b', Fixed: '#22c55e', "Won't fix": '#64748b' }),
+      { name: 'Assignee', type: 'person', width: 140 },
+      { name: 'Severity', type: 'priority', width: 120 },
+      { name: 'Reported', type: 'date', width: 130 },
+      { name: 'Area', type: 'text', width: 130 },
+    ],
+    groups: [
+      { name: 'Critical', color: '#ef4444', items: [{ name: 'Login fails on Safari' }] },
+      { name: 'Backlog', color: '#94a3b8', items: [{ name: 'Typo on pricing page' }, { name: 'Slow dashboard load' }] },
+    ],
+  },
+  {
+    key: 'marketing',
+    label: 'Marketing Campaigns',
+    description: 'Plan campaigns across channels with budgets.',
+    color: '#ec4899',
+    icon: 'Megaphone',
+    columns: [
+      STATUS({ Planning: '#94a3b8', 'In production': '#0ea5e9', Live: '#22c55e', Done: '#8b5cf6' }),
+      { name: 'Owner', type: 'person', width: 140 },
+      { name: 'Channel', type: 'status', width: 130, settings: { labels: { Email: '#0ea5e9', Social: '#8b5cf6', Ads: '#f59e0b', Events: '#22c55e' } } },
+      { name: 'Run dates', type: 'timeline', width: 200 },
+      { name: 'Budget', type: 'number', width: 120, settings: { unit: '$', showSum: true } },
+    ],
+    groups: [
+      { name: 'This quarter', color: '#ec4899', items: [{ name: 'Product launch push' }, { name: 'Webinar series' }] },
+      { name: 'Ideas', color: '#94a3b8', items: [{ name: 'Referral program' }] },
+    ],
+  },
+  {
+    key: 'onboarding_hr',
+    label: 'Employee Onboarding',
+    description: 'Onboard new hires with tasks, owners and due dates.',
+    color: '#14b8a6',
+    icon: 'UserPlus',
+    columns: [
+      STATUS({ 'To do': '#94a3b8', 'In progress': '#0ea5e9', Done: '#22c55e' }),
+      { name: 'New hire', type: 'person', width: 150 },
+      { name: 'Buddy', type: 'person', width: 140 },
+      { name: 'Due', type: 'date', width: 130 },
+      { name: 'Done', type: 'checkbox', width: 80 },
+    ],
+    groups: [
+      { name: 'Before day 1', color: '#14b8a6', items: [{ name: 'Send offer & contract' }, { name: 'Set up accounts' }] },
+      { name: 'Week 1', color: '#0ea5e9', items: [{ name: 'Team intro' }, { name: 'Tooling walkthrough' }] },
     ],
   },
 ]
