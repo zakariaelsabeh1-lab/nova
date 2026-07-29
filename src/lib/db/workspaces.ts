@@ -8,7 +8,11 @@ import { PLAN_LIMITS, isSuperOwner } from '@/lib/plan'
 
 // ── Workspaces the current user belongs to ──────────────────────────────────
 export function useWorkspaces() {
-  const userId = useAuthStore((s) => s.user?.id)
+  // Prefer the auth SESSION id (available the instant the session resolves) over
+  // the profile id (which lags a round-trip). Using the profile id disabled this
+  // query during boot, so RequireWorkspace saw "no workspaces" and wrongly bounced
+  // to /onboarding on every reload.
+  const userId = useAuthStore((s) => s.session?.user?.id ?? s.user?.id)
   return useQuery({
     queryKey: ['workspaces', userId],
     enabled: !!userId,
