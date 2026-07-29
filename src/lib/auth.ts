@@ -1,11 +1,24 @@
 import { useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
+
+// Joins the user to any workspace they were invited to (by email) before they
+// had an account. Runs server-side (SECURITY DEFINER) so a brand-new, not-yet-a-
+// member user can be added despite RLS. Safe to call repeatedly (idempotent).
+export async function redeemInvites() {
+  try {
+    await supabase.rpc('redeem_invites')
+  } catch {
+    /* function may not exist yet on older DBs; ignore */
+  }
+}
 
 // Initializes the auth session and keeps the store in sync with Supabase.
 // Mount once, near the app root.
 export function useAuthInit() {
   const { setSession, setUser, setLoading, fetchProfile } = useAuthStore()
+  const qc = useQueryClient()
 
   useEffect(() => {
     let mounted = true
@@ -29,7 +42,11 @@ export function useAuthInit() {
         if (!mounted) return
         setSession(session)
         try {
-          if (session?.user) await fetchProfile(session.user.id)
+          if (session?.user) {
+            await fetchProfile(session.user.id)
+            await redeemInvites()
+            qc.invalidateQueries({ queryKey: ['workspaces'] })
+          }
         } catch {
           /* a missing/slow profile shouldn't block boot */
         } finally {
@@ -40,12 +57,19 @@ export function useAuthInit() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return
       setSession(session)
       try {
-        if (session?.user) await fetchProfile(session.user.id)
-        else setUser(null)
+        if (session?.user) {
+          await fetchProfile(session.user.id)
+          if (event === 'SIGNED_IN') {
+            await redeemInvites()
+            qc.invalidateQueries({ queryKey: ['workspaces'] })
+          }
+        } else {
+          setUser(null)
+        }
       } catch {
         /* ignore */
       } finally {
@@ -58,7 +82,7 @@ export function useAuthInit() {
       clearTimeout(safety)
       subscription.unsubscribe()
     }
-  }, [setSession, setUser, setLoading, fetchProfile])
+  }, [setSession, setUser, setLoading, fetchProfile, qc])
 }
 
 // ── Auth actions (thin wrappers used by the login/onboarding screens) ───────

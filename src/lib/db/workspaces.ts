@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { useAuthStore } from '@/store/authStore'
-import type { Workspace, WorkspaceMember, Subscription, Plan, UserRole } from '@/types'
+import type { Workspace, WorkspaceMember, Subscription, Plan, UserRole, Invite } from '@/types'
 import { PLAN_LIMITS, isSuperOwner } from '@/lib/plan'
 
 // ── Workspaces the current user belongs to ──────────────────────────────────
@@ -183,7 +183,37 @@ export function useInviteMember(workspaceId: string | null) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['members', workspaceId] })
+      qc.invalidateQueries({ queryKey: ['invites', workspaceId] })
     },
+  })
+}
+
+// Pending (not-yet-accepted) invites for a workspace.
+export function usePendingInvites(workspaceId: string | null) {
+  return useQuery({
+    queryKey: ['invites', workspaceId],
+    enabled: !!workspaceId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('invites')
+        .select('*')
+        .eq('workspace_id', workspaceId!)
+        .eq('used', false)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data as Invite[]
+    },
+  })
+}
+
+export function useCancelInvite(workspaceId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('invites').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['invites', workspaceId] }),
   })
 }
 
