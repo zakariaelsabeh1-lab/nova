@@ -208,6 +208,13 @@ export function LoginPage() {
           <Sparkles className="w-3.5 h-3.5" />
           Free plan includes 2 boards & 3 members
         </div>
+        {/* Build stamp: makes a stale deployment immediately obvious. */}
+        <div className="text-center mt-2 text-white/20 text-[10px] font-mono">
+          build {typeof __BUILD_ID__ === 'string' ? __BUILD_ID__ : 'dev'} ·{' '}
+          <a href="/debug" className="underline hover:text-white/40">
+            diagnostics
+          </a>
+        </div>
       </motion.div>
     </div>
   )

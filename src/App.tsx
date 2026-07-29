@@ -7,6 +7,7 @@ import { useAuthInit } from '@/lib/auth'
 import { useWorkspaces } from '@/lib/db/workspaces'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { LoginPage } from '@/pages/LoginPage'
+import { DebugPage } from '@/pages/DebugPage'
 import { OnboardingPage } from '@/pages/OnboardingPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { BoardView } from '@/pages/BoardView'
@@ -93,6 +94,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      {/* Diagnostics — intentionally outside the auth/workspace guards so it
+          always loads, even when the app is stuck. */}
+      <Route path="/debug" element={<DebugPage />} />
       <Route
         path="/onboarding"
         element={
