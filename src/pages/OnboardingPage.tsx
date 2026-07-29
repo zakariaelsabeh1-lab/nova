@@ -22,9 +22,11 @@ export function OnboardingPage() {
   const [wsName, setWsName] = useState(user?.full_name ? `${user.full_name.split(' ')[0]}'s Workspace` : 'My Workspace')
   const [templateKey, setTemplateKey] = useState('project_plan')
   const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
 
   const finish = async () => {
     setBusy(true)
+    setErr('')
     try {
       const ws = await createWorkspace.mutateAsync(wsName.trim() || 'My Workspace')
       setWorkspace(ws.id)
@@ -35,7 +37,9 @@ export function OnboardingPage() {
       // this no longer bounces back to /onboarding.
       navigate(`/board/${board.id}`, { replace: true })
     } catch (e) {
-      notifyError(errorMessage(e, 'Could not set up your workspace'))
+      const msg = errorMessage(e, 'Could not set up your workspace')
+      setErr(msg)
+      notifyError(msg)
       setBusy(false)
     }
   }
@@ -141,6 +145,15 @@ export function OnboardingPage() {
                     {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Create workspace <ArrowRight className="w-4 h-4" /></>}
                   </button>
                 </div>
+
+                {err && (
+                  <div
+                    className="mt-4 text-[12.5px] leading-relaxed rounded-xl px-3 py-2.5"
+                    style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5' }}
+                  >
+                    <span className="font-semibold">Couldn't create workspace:</span> {err}
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
