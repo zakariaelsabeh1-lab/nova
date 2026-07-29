@@ -1,11 +1,9 @@
 -- ============================================================================
 -- Nova — full one-shot setup for a fresh Supabase project.
 -- Paste this entire file into the Supabase SQL editor and Run.
--- It applies the base schema + all migrations in order (idempotent).
 -- Generated from supabase/schema.sql + supabase/migrations/*.sql
 -- ============================================================================
 
--- ==================== base schema (schema.sql) ====================
 -- Nova schema
 -- Run in Supabase SQL Editor
 
@@ -599,10 +597,7 @@ alter table public.automation_runs   enable row level security;
 
 -- ── Workspaces ──────────────────────────────────────────────────────────────
 drop policy if exists ws_select on public.workspaces;
--- Owner can read their own workspace (needed so insert().select() returns the row
--- before the membership trigger's row is visible); members see theirs too.
-create policy ws_select on public.workspaces for select
-  using (owner_id = auth.uid() or is_workspace_member(id));
+create policy ws_select on public.workspaces for select using (is_workspace_member(id));
 drop policy if exists ws_insert on public.workspaces;
 create policy ws_insert on public.workspaces for insert with check (auth.uid() = owner_id);
 drop policy if exists ws_update on public.workspaces;
@@ -898,3 +893,126 @@ end $$;
 drop policy if exists profiles_insert on public.profiles;
 create policy profiles_insert on public.profiles
   for insert with check (auth.uid() = id);
+
+-- ==================== migration: 20260710001100_workspace_select_owner.sql ====================
+-- ============================================================================
+-- 0011 · Fix "cannot create workspace" — broaden the workspaces SELECT policy.
+--
+-- Symptom: onboarding calls `insert(workspace).select().single()`. PostgREST runs
+-- INSERT ... RETURNING and then applies the ws_select policy to return the row.
+-- The old policy only allowed members (`is_workspace_member(id)`), but the owner's
+-- membership row is created by the handle_new_workspace AFTER-INSERT trigger, which
+-- is NOT visible to the same statement's RETURNING. Result: the workspace row is
+-- created, but the SELECT-back returns 0 rows and the client throws
+-- (`POST /rest/v1/workspaces?select=* → PGRST116 / "0 rows"`), so onboarding fails.
+--
+-- Fix: let the owner read their own workspace directly. The just-inserted row has
+-- owner_id = auth.uid() (available in the same statement), so it is returned
+-- immediately, while members still see workspaces they belong to.
+-- Additive and idempotent.
+-- ============================================================================
+
+drop policy if exists ws_select on public.workspaces;
+create policy ws_select on public.workspaces for select
+  using (owner_id = auth.uid() or is_workspace_member(id));
+
+-- Re-assert the owner→admin membership + free subscription trigger, in case an
+-- earlier migration run applied the policies but not this trigger. Idempotent.
+create or replace function public.handle_new_workspace()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.owner_id is not null then
+    insert into public.workspace_members (workspace_id, user_id, role)
+    values (new.id, new.owner_id, 'admin')
+    on conflict (workspace_id, user_id) do nothing;
+    insert into public.subscriptions (workspace_id, plan, status)
+    values (new.id, 'free', 'active')
+    on conflict (workspace_id) do nothing;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists on_workspace_created on public.workspaces;
+create trigger on_workspace_created after insert on public.workspaces
+  for each row execute function public.handle_new_workspace();
+
+-- ==================== migration: 20260710001200_owner_full_access.sql ====================
+-- ============================================================================
+-- 0012 · App-owner full access.
+--
+-- Plan limits are enforced server-side by enforce_board_limit / _member_limit /
+-- _automation_limit, all of which read workspace_plan(). To give the app owner
+-- unlimited access without paying (for ownership + testing), workspace_plan()
+-- returns 'pro' for any workspace whose owner is in the allowlist below. Keep the
+-- email list in sync with SUPER_OWNER_EMAILS in src/lib/plan.ts.
+-- Idempotent (create or replace).
+-- ============================================================================
+
+create or replace function public.workspace_plan(ws uuid)
+returns text language sql security definer stable set search_path = public as $$
+  select case
+    when exists (
+      select 1
+      from workspaces w
+      join profiles p on p.id = w.owner_id
+      where w.id = ws
+        and lower(p.email) = any (array['zack.elsabeh@hotmail.com'])
+    ) then 'pro'
+    else coalesce((select plan from subscriptions where workspace_id = ws), 'free')
+  end;
+$$;
+
+-- Reflect Pro on the owner's existing subscriptions so the Billing page and any
+-- direct subscription reads show Pro too (not just the plan-limit checks).
+update public.subscriptions s
+set plan = 'pro', status = 'active', updated_at = now()
+from public.workspaces w
+join public.profiles p on p.id = w.owner_id
+where s.workspace_id = w.id
+  and lower(p.email) = 'zack.elsabeh@hotmail.com';
+
+-- ==================== migration: 20260710001300_redeem_invites.sql ====================
+-- ============================================================================
+-- 0013 · Auto-join invited users on sign-up.
+--
+-- When an admin invites an email that has no account yet, a row is stored in
+-- `invites`. This function lets that person, once they sign up, join every
+-- workspace they were invited to. It runs SECURITY DEFINER so a brand-new user
+-- (not yet a member of the workspace) can be added despite RLS, and it matches
+-- on the caller's own email only. Idempotent.
+-- ============================================================================
+
+create or replace function public.redeem_invites()
+returns integer language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  em  text;
+  cnt int := 0;
+  inv record;
+begin
+  if uid is null then return 0; end if;
+
+  select email into em from public.profiles where id = uid;
+  if em is null then select email into em from auth.users where id = uid; end if;
+  if em is null then return 0; end if;
+
+  for inv in
+    select * from public.invites
+    where lower(email) = lower(em) and coalesce(used, false) = false and workspace_id is not null
+  loop
+    begin
+      insert into public.workspace_members (workspace_id, user_id, role)
+      values (inv.workspace_id, uid, inv.role)
+      on conflict (workspace_id, user_id) do nothing;
+      update public.invites set used = true where id = inv.id;
+      cnt := cnt + 1;
+    exception when others then
+      -- e.g. the workspace's plan member-limit is hit; leave the invite pending.
+      null;
+    end;
+  end loop;
+
+  return cnt;
+end $$;
+
+grant execute on function public.redeem_invites() to authenticated;

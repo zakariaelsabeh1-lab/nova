@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UserPlus, Mail, Shield, User, Eye, MoreHorizontal, Search, Loader2, Check } from 'lucide-react'
+import { UserPlus, Mail, Shield, User, Eye, MoreHorizontal, Search, Loader2, Check, Clock, X } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import {
   useCurrentWorkspaceId, useMembers, useMyRole, useInviteMember, useUpdateMemberRole, useRemoveMember, usePlan,
+  usePendingInvites, useCancelInvite,
 } from '@/lib/db/workspaces'
 import { getInitials } from '@/lib/utils'
 import { notifyError, notifySuccess, errorMessage } from '@/lib/toast'
@@ -25,6 +26,8 @@ export function TeamPage() {
   const invite = useInviteMember(workspaceId)
   const updateRole = useUpdateMemberRole()
   const removeMember = useRemoveMember()
+  const { data: pendingInvites = [] } = usePendingInvites(workspaceId)
+  const cancelInvite = useCancelInvite(workspaceId)
 
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<UserRole>('member')
@@ -44,7 +47,11 @@ export function TeamPage() {
     e.preventDefault()
     try {
       const res = await invite.mutateAsync({ email: inviteEmail, role: inviteRole })
-      notifySuccess(res.added ? 'Member added' : 'Invite sent')
+      notifySuccess(
+        res.added
+          ? 'Member added to your team'
+          : "Invite saved — they'll join automatically when they sign up with that email"
+      )
       setInviteEmail('')
       setShowInvite(false)
     } catch (err) {
@@ -184,6 +191,43 @@ export function TeamPage() {
           )}
         </div>
       </div>
+
+      {/* Pending invites — people invited who haven't signed up yet */}
+      {pendingInvites.length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-2.5">
+            <Clock className="w-4 h-4 text-[#f59e0b]" />
+            <h2 className="text-[14px] font-bold text-[#0f172a]">Pending invites</h2>
+            <span className="text-[12px] font-semibold text-[#94a3b8]">{pendingInvites.length}</span>
+          </div>
+          <div className="bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden shadow-sm">
+            {pendingInvites.map((inv) => (
+              <div key={inv.id} className="flex items-center gap-3 px-5 py-3.5 border-b border-[#f8fafc] last:border-0">
+                <div className="w-9 h-9 rounded-full bg-[#fff7ed] flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-4 h-4 text-[#f59e0b]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-[#0f172a] truncate">{inv.email}</p>
+                  <p className="text-[11px] text-[#94a3b8]">Joins as {ROLE_META[inv.role]?.label ?? inv.role} when they sign up</p>
+                </div>
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#fff7ed] text-[#c2410c]">Pending</span>
+                {isAdmin && (
+                  <button
+                    onClick={() => cancelInvite.mutate(inv.id)}
+                    className="w-8 h-8 flex items-center justify-center text-[#94a3b8] hover:text-[#ef4444] hover:bg-[#f1f5f9] rounded-lg transition-all"
+                    title="Cancel invite"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-[11.5px] text-[#94a3b8] mt-2">
+            Invited people join automatically the first time they sign up with that email address.
+          </p>
+        </div>
+      )}
     </motion.div>
   )
 }
