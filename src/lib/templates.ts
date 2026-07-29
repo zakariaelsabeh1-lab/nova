@@ -125,6 +125,50 @@ export const TEMPLATES: BoardTemplate[] = [
       { name: 'Ideas', color: '#94a3b8', items: [{ name: 'Customer story' }] },
     ],
   },
+  {
+    key: 'vacation',
+    label: 'Vacation / Time Off',
+    description: 'Track team time-off: status, leave type, dates and day counts.',
+    color: '#14b8a6',
+    icon: 'Palmtree',
+    columns: [
+      STATUS({ Requested: '#f59e0b', Approved: '#22c55e', Declined: '#ef4444' }),
+      { name: 'Employee', type: 'person', width: 150 },
+      // second status column = colored "tags" for the kind of leave
+      {
+        name: 'Leave type',
+        type: 'status',
+        width: 140,
+        settings: { labels: { Vacation: '#0ea5e9', Sick: '#8b5cf6', Personal: '#f59e0b', Unpaid: '#94a3b8' } },
+      },
+      { name: 'Dates', type: 'timeline', width: 210 }, // shows on Calendar + Timeline views
+      { name: 'Days', type: 'number', width: 90, settings: { showSum: true } },
+      { name: 'Notes', type: 'text', width: 160 },
+    ],
+    groups: [
+      { name: 'Pending requests', color: '#f59e0b', items: [{ name: 'Time-off request' }] },
+      { name: 'Approved', color: '#22c55e', items: [] },
+      { name: 'This year', color: '#0ea5e9', items: [] },
+    ],
+  },
+  {
+    key: 'tasks',
+    label: 'Team Tasks',
+    description: 'A simple task tracker with owners, due dates and priority.',
+    color: '#0ea5e9',
+    icon: 'CheckSquare',
+    columns: [
+      STATUS({ 'To do': '#94a3b8', 'In progress': '#0ea5e9', 'In review': '#8b5cf6', Done: '#22c55e' }),
+      { name: 'Owner', type: 'person', width: 140 },
+      { name: 'Priority', type: 'priority', width: 120 },
+      { name: 'Due date', type: 'date', width: 140 },
+      { name: 'Done', type: 'checkbox', width: 80 },
+    ],
+    groups: [
+      { name: 'This week', color: '#0ea5e9', items: [{ name: 'Finish onboarding flow' }, { name: 'Review pull requests' }] },
+      { name: 'Later', color: '#94a3b8', items: [{ name: 'Plan next quarter' }] },
+    ],
+  },
 ]
 
 export function getTemplate(key: string): BoardTemplate | undefined {
